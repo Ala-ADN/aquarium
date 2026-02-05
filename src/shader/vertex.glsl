@@ -15,7 +15,7 @@ void main() {
     if (fihVertex == 8.0 || fihVertex == 9.0) {
         // Tail fin
         newPosition.y += sin(tmpPos.w * 2.0) * 8.0;
-        newPosition.x += cos(tmpPos.w * 2.0) * 2.0;
+        newPosition.x += cos(tmpPos.w * 2.0) * 8.0;
     }
 	newPosition = mat3( modelMatrix ) * newPosition;
 	velocity.z *= -1.;

@@ -12,8 +12,10 @@ import {
 } from "three";
 import { FihGeometry } from "./geometry/fih";
 import { GPUSimulation } from "./simulation/GPUSimulation";
+import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import vertexShader from "./shader/vertex.glsl?raw";
 import fragmentShader from "./shader/fragment.glsl?raw";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const scene = new Scene();
 scene.background = new Color(0x006994);
@@ -51,6 +53,42 @@ fihMesh.matrixAutoUpdate = false;
 fihMesh.updateMatrix();
 scene.add(fihMesh);
 
+// orbit controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+controls.enabled = false; // Start disabled
+
+const gui = new GUI();
+
+const effectController = {
+  separation: 20.0,
+  alignment: 20.0,
+  cohesion: 20.0,
+  freedom: 0.75,
+  paused: true, // NEW: pause simulation
+};
+
+const valuesChanger = function () {
+  gpuSim.velocityUniforms["separationDistance"].value = effectController.separation;
+  gpuSim.velocityUniforms["alignmentDistance"].value = effectController.alignment;
+  gpuSim.velocityUniforms["cohesionDistance"].value = effectController.cohesion;
+  gpuSim.velocityUniforms["freedomFactor"].value = effectController.freedom;
+};
+
+valuesChanger();
+
+gui.add(effectController, "separation", 0.0, 100.0, 1.0).onChange(valuesChanger);
+gui.add(effectController, "alignment", 0.0, 100, 0.001).onChange(valuesChanger);
+gui.add(effectController, "cohesion", 0.0, 100, 0.025).onChange(valuesChanger);
+gui
+  .add(effectController, "paused")
+  .name("Pause Simulation")
+  .onChange((value: boolean) => {
+    controls.enabled = value; // Enable free camera when paused
+  });
+gui.close();
+
 let lastTime = performance.now();
 let mouseX = 0;
 let mouseY = 0;
@@ -61,34 +99,35 @@ renderer.setAnimationLoop(() => {
   if (delta > 1) delta = 1; // safety cap on large deltas
   lastTime = now;
 
-  // Update GPU simulation uniforms
-  gpuSim.positionUniforms["time"].value = now;
-  gpuSim.positionUniforms["delta"].value = delta;
-  gpuSim.velocityUniforms["time"].value = now;
-  gpuSim.velocityUniforms["delta"].value = delta;
+  if (!effectController.paused) {
+    // Update GPU simulation uniforms
+    gpuSim.positionUniforms["time"].value = now;
+    gpuSim.positionUniforms["delta"].value = delta;
+    gpuSim.velocityUniforms["time"].value = now;
+    gpuSim.velocityUniforms["delta"].value = delta;
 
-  // Update bird mesh uniforms
-  fihUniforms["time"].value = now;
-  fihUniforms["delta"].value = delta;
+    // Update bird mesh uniforms
+    fihUniforms["time"].value = now;
+    fihUniforms["delta"].value = delta;
 
-  // Update predator (mouse) position
-  gpuSim.velocityUniforms["predator"].value.set(
-    (0.5 * mouseX) / windowHalfX,
-    (-0.5 * mouseY) / windowHalfY,
-    0
-  );
+    // Update predator (mouse) position
+    gpuSim.velocityUniforms["predator"].value.set(
+      (0.5 * mouseX) / windowHalfX,
+      (-0.5 * mouseY) / windowHalfY,
+      0
+    );
 
-  // Reset mouse (so it doesn't continuously affect)
-  mouseX = 10000;
-  mouseY = 10000;
+    // Reset mouse (so it doesn't continuously affect)
+    mouseX = 10000;
+    mouseY = 10000;
 
-  // Run GPU computation
-  gpuSim.compute();
+    // Run GPU computation
+    gpuSim.compute();
 
-  // Pass computed textures to bird shader
-  fihUniforms["texturePosition"].value = gpuSim.getCurrentPositionTexture();
-  fihUniforms["textureVelocity"].value = gpuSim.getCurrentVelocityTexture();
-
+    // Pass computed textures to bird shader
+    fihUniforms["texturePosition"].value = gpuSim.getCurrentPositionTexture();
+    fihUniforms["textureVelocity"].value = gpuSim.getCurrentVelocityTexture();
+  }
   // Render scene
   renderer.render(scene, camera);
 });
@@ -110,3 +149,10 @@ const onPointerMove = (event: PointerEvent) => {
   mouseY = event.clientY - windowHalfY;
 };
 document.addEventListener("pointermove", onPointerMove);
+document.addEventListener("keydown", (event) => {
+  if (event.code === "Space") {
+    effectController.paused = !effectController.paused;
+    controls.enabled = effectController.paused;
+    gui.controllers.forEach((controller) => controller.updateDisplay());
+  }
+});

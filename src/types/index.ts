@@ -14,10 +14,6 @@ export interface FihTemplate {
 
 export type FinShape = "standard" | "pointed" | "rounded";
 
-export interface CustomFinPath {
-  vertices: Float32Array; // User-drawn fin outline
-}
-
 export interface FihInstance {
   templateId: string;
   instanceIndex: number; // Position in instance buffer

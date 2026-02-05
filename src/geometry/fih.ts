@@ -41,6 +41,7 @@ export class FihGeometry extends BufferGeometry {
     const finHeight = 10 * finSize;
 
     for (let f = 0; f < MAX_FIH; f++) {
+      // TODO: rotate fih
       // Body
       verts_push(
         0,
