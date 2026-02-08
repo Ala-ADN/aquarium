@@ -1,7 +1,7 @@
-import { MAX_FIH, WIDTH, DEFAULT_FIN_SIZE } from "../constants";
+import { MAX_FIH, WIDTH, DEFAULT_FIN_SIZE } from "../../constants";
 
 import { BufferGeometry, BufferAttribute, Color } from "three";
-import type { FihTemplate } from "../types";
+import type { FihTemplate } from "../../types";
 
 export class FihGeometry extends BufferGeometry {
   constructor(template?: Partial<FihTemplate>) {

@@ -2,8 +2,8 @@
 import { WebGLRenderer, Vector3, RepeatWrapping, Texture } from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
 import { BOUNDS, BOUNDS_HALF, WIDTH } from "../constants";
-import fragmentShaderPosition from "../shader/position.glsl?raw";
-import fragmentShaderVelocity from "../shader/velocity.glsl?raw";
+import fragmentShaderPosition from "../fih/shader/position.glsl?raw";
+import fragmentShaderVelocity from "../fih/shader/velocity.glsl?raw";
 
 export class GPUSimulation {
   gpuCompute: GPUComputationRenderer;

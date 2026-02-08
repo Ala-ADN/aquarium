@@ -10,17 +10,25 @@ import {
   Texture,
   Fog,
   AxesHelper,
+  PlaneGeometry,
+  FrontSide,
+  TextureLoader,
+  RepeatWrapping,
 } from "three";
-import { FihGeometry } from "./geometry/fih";
+import { FihGeometry } from "./fih/geometry/fih";
 import { GPUSimulation } from "./simulation/GPUSimulation";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
-import vertexShader from "./shader/vertex.glsl?raw";
-import fragmentShader from "./shader/fragment.glsl?raw";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { BOUNDS } from "./constants";
+import voronoise from "./asset/voronoi_noise.png";
+import fihVertexShader from "./fih/shader/vertex.glsl?raw";
+import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
+import grFragmentShader from "./god-ray/fragment.glsl?raw";
+import grVertexShader from "./god-ray/vertex.glsl?raw";
 
 const scene = new Scene();
-scene.background = new Color(0x006994);
-scene.fog = new Fog(0x006994, 100, 1000);
+scene.background = new Color(0x003c5f);
+scene.fog = new Fog(0x003c5f, 100, 1000);
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
 camera.position.z = 350;
 
@@ -43,8 +51,8 @@ const fihUniforms = {
 
 const fihMaterial = new ShaderMaterial({
   uniforms: fihUniforms,
-  vertexShader: vertexShader,
-  fragmentShader: fragmentShader,
+  vertexShader: fihVertexShader,
+  fragmentShader: fihFragmentShader,
   side: DoubleSide,
 });
 
@@ -53,6 +61,25 @@ fihMesh.rotation.y = Math.PI / 2;
 fihMesh.matrixAutoUpdate = false;
 fihMesh.updateMatrix();
 scene.add(fihMesh);
+
+const noiseTexture = new TextureLoader().load(voronoise);
+noiseTexture.wrapS = RepeatWrapping;
+noiseTexture.wrapT = RepeatWrapping;
+
+const grPlane = new PlaneGeometry(2 * BOUNDS, BOUNDS);
+const grMaterial = new ShaderMaterial({
+  side: FrontSide,
+  uniforms: {
+    time: { value: 1.0 },
+    uniformTexture: { value: noiseTexture },
+    BOUNDS: { value: BOUNDS },
+  },
+  transparent: true,
+  vertexShader: grVertexShader,
+  fragmentShader: grFragmentShader,
+});
+const grMesh = new Mesh(grPlane, grMaterial);
+scene.add(grMesh);
 
 // orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -72,7 +99,7 @@ const effectController = {
   alignment: 20.0,
   cohesion: 20.0,
   freedom: 0.75,
-  paused: true, // NEW: pause simulation
+  paused: true,
 };
 
 const valuesChanger = function () {
@@ -106,6 +133,7 @@ renderer.setAnimationLoop(() => {
   lastTime = now;
 
   if (!effectController.paused) {
+    grMaterial.uniforms["time"].value = now;
     // Update GPU simulation uniforms
     gpuSim.positionUniforms["time"].value = now;
     gpuSim.positionUniforms["delta"].value = delta;
