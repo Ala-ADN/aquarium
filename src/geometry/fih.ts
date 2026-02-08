@@ -35,38 +35,39 @@ export class FihGeometry extends BufferGeometry {
       }
     };
 
-    const bodyLength = 30 * bodySize;
-    const bodyHeight = 10 * bodySize;
-    const finOffset = 15 * finSize;
+    const bodyLength = 60 * bodySize;
+    const bodyHeight = 15 * bodySize;
+    const finOffset = 10 * finSize;
     const finHeight = 10 * finSize;
 
     for (let f = 0; f < MAX_FIH; f++) {
       // TODO: rotate fih
+      // Tail fin
+      verts_push(0, finHeight, -finOffset, 0, -finHeight, -finOffset, 0, 0, 0);
       // Body
       verts_push(
         0,
         0,
         0,
         0,
-        bodyLength * headRatio,
         bodyHeight,
+        bodyLength * (1 - headRatio),
         0,
-        bodyLength * headRatio,
-        -bodyHeight
+        -bodyHeight,
+        bodyLength * (1 - headRatio)
       );
+      // Head
       verts_push(
         0,
-        bodyLength * headRatio,
         bodyHeight,
+        bodyLength * (1 - headRatio),
         0,
-        bodyLength * headRatio,
         -bodyHeight,
+        bodyLength * (1 - headRatio),
         0,
-        bodyLength,
-        0
+        0,
+        bodyLength
       );
-      // Tail fin
-      verts_push(0, bodyLength, 0, 0, finOffset, finHeight, 0, finOffset, -finHeight);
     }
 
     for (let i = 0; i < triangles * 3; i++) {

@@ -9,6 +9,7 @@ import {
   DoubleSide,
   Texture,
   Fog,
+  AxesHelper,
 } from "three";
 import { FihGeometry } from "./geometry/fih";
 import { GPUSimulation } from "./simulation/GPUSimulation";
@@ -58,6 +59,10 @@ const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enabled = false; // Start disabled
+
+// Add axis helper
+const axesHelper = new AxesHelper(100);
+scene.add(axesHelper);
 
 const gui = new GUI();
 

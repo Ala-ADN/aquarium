@@ -12,10 +12,10 @@ void main() {
 	vec3 pos = tmpPos.xyz;
 	vec3 velocity = normalize(texture2D( textureVelocity, reference ).xyz);
 	vec3 newPosition = position;
-    if (fihVertex == 8.0 || fihVertex == 9.0) {
+    if (fihVertex == 0.0 || fihVertex == 1.0) {
         // Tail fin
-        newPosition.y += sin(tmpPos.w * 2.0) * 8.0;
-        newPosition.x += cos(tmpPos.w * 2.0) * 8.0;
+        newPosition.z += sin(tmpPos.w * 0.5) * 1.5;
+        newPosition.x += cos(tmpPos.w * 0.5) * 1.0;
     }
 	newPosition = mat3( modelMatrix ) * newPosition;
 	velocity.z *= -1.;
