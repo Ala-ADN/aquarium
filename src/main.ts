@@ -62,6 +62,7 @@ controls.enabled = false; // Start disabled
 
 // Add axis helper
 const axesHelper = new AxesHelper(100);
+axesHelper.visible = false; // Set to true to see the axes
 scene.add(axesHelper);
 
 const gui = new GUI();
@@ -158,6 +159,7 @@ document.addEventListener("keydown", (event) => {
   if (event.code === "Space") {
     effectController.paused = !effectController.paused;
     controls.enabled = effectController.paused;
+    axesHelper.visible = effectController.paused;
     gui.controllers.forEach((controller) => controller.updateDisplay());
   }
 });
