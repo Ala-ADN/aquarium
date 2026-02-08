@@ -20,6 +20,7 @@ import { GPUSimulation } from "./simulation/GPUSimulation";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BOUNDS } from "./constants";
+// @ TODO look for tilable noise texture
 import voronoise from "./asset/voronoi_noise.png";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
