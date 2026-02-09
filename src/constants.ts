@@ -1,5 +1,5 @@
 export const WIDTH = 32;
-export const MAX_FIH = WIDTH * WIDTH; // 1024
+export const MAX_FIH = WIDTH * WIDTH; // 4096
 export const BOUNDS = 800;
 export const BOUNDS_HALF = BOUNDS / 2;
 export const DEFAULT_FIN_SIZE = 2;

@@ -14,6 +14,7 @@ import {
   FrontSide,
   TextureLoader,
   RepeatWrapping,
+  Vector2,
 } from "three";
 import { FihGeometry } from "./fih/geometry/fih";
 import { GPUSimulation } from "./simulation/GPUSimulation";
@@ -26,10 +27,12 @@ import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
 import grFragmentShader from "./god-ray/fragment.glsl?raw";
 import grVertexShader from "./god-ray/vertex.glsl?raw";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/examples/jsm/postprocessing/UnrealBloomPass.js";
 
 const scene = new Scene();
-scene.background = new Color(0x003c5f);
-scene.fog = new Fog(0x003c5f, 100, 1000);
+scene.background = new Color(0x003366);
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
 camera.position.z = 350;
 
@@ -38,6 +41,18 @@ const renderer = new WebGLRenderer({ canvas: canvas, antialias: true });
 renderer.setPixelRatio(window.devicePixelRatio);
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setClearColor(0x090909);
+
+const composer = new EffectComposer(renderer);
+const renderPass = new RenderPass(scene, camera);
+composer.addPass(renderPass);
+
+const bloomPass = new UnrealBloomPass(
+  new Vector2(window.innerWidth, window.innerHeight),
+  1.5, // strength
+  0.4, // radius
+  0.85 // threshold
+);
+composer.addPass(bloomPass);
 
 const gpuSim = new GPUSimulation(renderer);
 
@@ -80,6 +95,7 @@ const grMaterial = new ShaderMaterial({
   fragmentShader: grFragmentShader,
 });
 const grMesh = new Mesh(grPlane, grMaterial);
+grMesh.layers;
 scene.add(grMesh);
 
 // orbit controls
@@ -120,6 +136,10 @@ gui
   .onChange((value: boolean) => {
     controls.enabled = value; // Enable free camera when paused
   });
+// Add to GUI for tweaking
+gui.add(bloomPass, "strength", 0.0, 3.0, 0.01).name("Bloom Strength");
+gui.add(bloomPass, "radius", 0.0, 1.0, 0.01).name("Bloom Radius");
+gui.add(bloomPass, "threshold", 0.0, 1.0, 0.01).name("Bloom Threshold");
 gui.close();
 
 let lastTime = performance.now();
@@ -163,7 +183,8 @@ renderer.setAnimationLoop(() => {
     fihUniforms["textureVelocity"].value = gpuSim.getCurrentVelocityTexture();
   }
   // Render scene
-  renderer.render(scene, camera);
+  //renderer.render(scene, camera);
+  composer.render(); // Use composer for post-processing
 });
 
 const resize = () => {
@@ -172,6 +193,7 @@ const resize = () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight); // Add this
 };
 addEventListener("resize", resize);
 
