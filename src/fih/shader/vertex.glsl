@@ -6,8 +6,10 @@ uniform sampler2D textureVelocity;
 varying vec4 vColor;
 varying float z;
 uniform float time;
+varying vec2 vReference;
 
 void main() {
+	vReference = reference;
 	vec4 tmpPos = texture2D( texturePosition, reference );
 	vec3 pos = tmpPos.xyz;
 	vec3 velocity = normalize(texture2D( textureVelocity, reference ).xyz);

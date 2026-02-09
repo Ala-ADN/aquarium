@@ -13,12 +13,12 @@ void main() {
     float c1 = texture2D(uniformTexture, vec2(uvDirection,0.) + 0.00002 * time * 1.5).x;
 
     float alpha = min(c, c1) ;
-    float fade = smoothstep(0.15,0.8,abs(newUV.y)) ;  
+    float fade = smoothstep(.9,1.8,abs(newUV.y)) ;  
     
     gl_FragColor = vec4(newUV,0.,1. );  
     gl_FragColor = vec4(vWorldPosition, 1.);
     gl_FragColor = vec4(tt.rgb, 1.);  
-    gl_FragColor = vec4(vec3(alpha), alpha*0.4*fade);
+    gl_FragColor = vec4(vec3(alpha), alpha*0.4*fade);   
 }
  
   

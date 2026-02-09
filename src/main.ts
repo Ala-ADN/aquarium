@@ -43,7 +43,7 @@ const gpuSim = new GPUSimulation(renderer);
 
 const geometry = new FihGeometry();
 const fihUniforms = {
-  color: { value: new Color(0xff0000) },
+  color: { value: new Color(0xec810a) },
   texturePosition: { value: null as Texture | null },
   textureVelocity: { value: null as Texture | null },
   time: { value: 1.0 },
@@ -107,7 +107,6 @@ const valuesChanger = function () {
   gpuSim.velocityUniforms["separationDistance"].value = effectController.separation;
   gpuSim.velocityUniforms["alignmentDistance"].value = effectController.alignment;
   gpuSim.velocityUniforms["cohesionDistance"].value = effectController.cohesion;
-  gpuSim.velocityUniforms["freedomFactor"].value = effectController.freedom;
 };
 
 valuesChanger();
