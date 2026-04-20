@@ -8,7 +8,6 @@ import {
   ShaderMaterial,
   DoubleSide,
   Texture,
-  Fog,
   AxesHelper,
   PlaneGeometry,
   FrontSide,
@@ -21,7 +20,7 @@ import { GPUSimulation } from "./simulation/GPUSimulation";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BOUNDS } from "./constants";
-// @ TODO look for tilable noise texture
+//TODO look for tilable noise texture or generate one procedurally
 import voronoise from "./asset/voronoi_noise.png";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
@@ -95,7 +94,6 @@ const grMaterial = new ShaderMaterial({
   fragmentShader: grFragmentShader,
 });
 const grMesh = new Mesh(grPlane, grMaterial);
-grMesh.layers;
 scene.add(grMesh);
 
 // orbit controls
@@ -106,7 +104,7 @@ controls.enabled = false; // Start disabled
 
 // Add axis helper
 const axesHelper = new AxesHelper(100);
-axesHelper.visible = false; // Set to true to see the axes
+axesHelper.visible = false;
 scene.add(axesHelper);
 
 const gui = new GUI();
@@ -116,7 +114,7 @@ const effectController = {
   alignment: 20.0,
   cohesion: 20.0,
   freedom: 0.75,
-  paused: true,
+  paused: false,
 };
 
 const valuesChanger = function () {
@@ -183,8 +181,8 @@ renderer.setAnimationLoop(() => {
     fihUniforms["textureVelocity"].value = gpuSim.getCurrentVelocityTexture();
   }
   // Render scene
-  //renderer.render(scene, camera);
-  composer.render(); // Use composer for post-processing
+  renderer.render(scene, camera);
+  // composer.render(); // Use composer for post-processing
 });
 
 const resize = () => {

@@ -9,7 +9,7 @@ void main() {
     
     // Normalize speed (SPEED_LIMIT is 9.0, can go up to 14.0 with boost)
     float normalizedSpeed = clamp( speed / 14.0, 0.1, 0.8 );
-    // @ TODO less red (clamp)
+    //TODO less red (clamp)
     // Mix color based on speed (slow = blue, fast = red)
     vec3 speedColor = mix( vec3(0.0, 0.3, 1.0), vec3(1.0, 0.2, 0.0), normalizedSpeed );
     
