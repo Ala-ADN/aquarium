@@ -8,12 +8,9 @@ importers:
 
   .:
     dependencies:
-      gsap:
-        specifier: ^3.14.2
-        version: 3.14.2
-      lil-gui:
-        specifier: ^0.21.0
-        version: 0.21.0
+      7.css:
+        specifier: ^0.21.1
+        version: 0.21.1
       three:
         specifier: ^0.182.0
         version: 0.182.0
@@ -27,11 +24,11 @@ importers:
       vite:
         specifier: ^7.2.4
         version: 7.3.1
-      vite-plugin-glsl:
-        specifier: ^1.5.5
-        version: 1.5.5(esbuild@0.27.2)(vite@7.3.1)
 
 packages:
+
+  7.css@0.21.1:
+    resolution: {integrity: sha512-Q+/aFUpGemoR/Zltj4a7yvHonyxfb+9cgiwBL+j/Lm+H28EOoLzWoJki7MdGPV+3mLCvKSCVqr3M2x2uNYyeWw==}
 
   '@dimforge/rapier3d-compat@0.12.0':
     resolution: {integrity: sha512-uekIGetywIgopfD97oDL5PfeezkFpNhwlzlaEYNOA0N6ghdsOvh/HYjSMek5Q2O1PYvRSDFcqFVJl4r4ZBwOow==}
@@ -357,12 +354,6 @@ packages:
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
 
-  gsap@3.14.2:
-    resolution: {integrity: sha512-P8/mMxVLU7o4+55+1TCnQrPmgjPKnwkzkXOK1asnR9Jg2lna4tEY5qBJjMmAaOBDDZWtlRjBXjLa0w53G/uBLA==}
-
-  lil-gui@0.21.0:
-    resolution: {integrity: sha512-tpvxN7v1GvE/Tv+GRopfOp0W7fVEjF4PltkuX8vOCIfim22rD1ztvfkoEMcv9lzQeuNUSeIrUmUjBwmlW/oUew==}
-
   meshoptimizer@0.22.0:
     resolution: {integrity: sha512-IebiK79sqIy+E4EgOr+CAw+Ke8hAspXKzBd0JdgEmPHiAwmvEj2S4h1rfvo+o/BnfEYd/jAOg5IeeIjzlzSnDg==}
 
@@ -402,19 +393,6 @@ packages:
     resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
     engines: {node: '>=14.17'}
     hasBin: true
-
-  vite-plugin-glsl@1.5.5:
-    resolution: {integrity: sha512-6NM2P4JkM+1hNSqMhM4eagX03bmhEoTyrOrk68y3Q6KXfdF73QIuCb6BmRZvwLPgXTCOBM3Zc8gL1WxctYnrUQ==}
-    engines: {node: '>= 20.17.0', npm: '>= 10.8.3'}
-    peerDependencies:
-      '@rollup/pluginutils': ^5.x
-      esbuild: '>= 0.25'
-      vite: '>= 3.x'
-    peerDependenciesMeta:
-      '@rollup/pluginutils':
-        optional: true
-      esbuild:
-        optional: true
 
   vite@7.3.1:
     resolution: {integrity: sha512-w+N7Hifpc3gRjZ63vYBXA56dvvRlNWRczTdmCBBa+CotUzAPf5b7YMdMR/8CQoeYE5LX3W4wj6RYTgonm1b9DA==}
@@ -457,6 +435,8 @@ packages:
         optional: true
 
 snapshots:
+
+  7.css@0.21.1: {}
 
   '@dimforge/rapier3d-compat@0.12.0': {}
 
@@ -671,10 +651,6 @@ snapshots:
   fsevents@2.3.3:
     optional: true
 
-  gsap@3.14.2: {}
-
-  lil-gui@0.21.0: {}
-
   meshoptimizer@0.22.0: {}
 
   nanoid@3.3.11: {}
@@ -730,12 +706,6 @@ snapshots:
       picomatch: 4.0.3
 
   typescript@5.9.3: {}
-
-  vite-plugin-glsl@1.5.5(esbuild@0.27.2)(vite@7.3.1):
-    dependencies:
-      vite: 7.3.1
-    optionalDependencies:
-      esbuild: 0.27.2
 
   vite@7.3.1:
     dependencies:

@@ -1,20 +1,19 @@
-import { Color, Texture } from "three";
+import type { Color } from "three";
 
 export interface FihTemplate {
-  id: string;
+  bodyShape?: FihShape;
   bodyColor: Color;
   bodySize: number;
   finColor: Color;
   finSize: number;
-  finShape?: FinShape;
   headRatio: number;
-  texture?: Texture;
   scale: number;
 }
 
-export type FinShape = "standard" | "pointed" | "rounded";
+export type FihShape = "classic" | "round" | "long";
 
-export interface FihInstance {
-  templateId: string;
-  instanceIndex: number; // Position in instance buffer
+export interface FihDesign {
+  shape: FihShape;
+  color: string;
+  count: number;
 }

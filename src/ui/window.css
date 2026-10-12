@@ -1,0 +1,42 @@
+.glass-window {
+  position: relative;
+  width: var(--window-width, 640px);
+  min-width: 0;
+  max-width: 100%;
+  pointer-events: auto;
+  translate: var(--window-x, 0px) var(--window-y, 0px);
+}
+
+.glass-window__surface {
+  transform: perspective(1000px) rotateX(var(--window-rx, 0deg)) rotateY(var(--window-ry, 0deg));
+  transition: transform 140ms ease-out;
+}
+
+.glass-window__handle {
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+}
+
+.glass-window__handle h2 {
+  margin: 0;
+  font: inherit;
+}
+
+.glass-window__handle:focus-visible {
+  outline: 1px dotted #000;
+  outline-offset: -2px;
+}
+
+.win7 .glass-window__content {
+  padding: 16px;
+}
+
+.glass-window:focus-within, .glass-window:hover { z-index: 1; }
+.glass-window[data-dragging] { z-index: 2; }
+.glass-window[data-dragging] .glass-window__handle { cursor: grabbing; }
+.glass-window[data-dragging] .glass-window__surface { transition: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .glass-window__surface { transform: none; transition: none; }
+}

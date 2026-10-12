@@ -1,4 +1,6 @@
 varying float z;
+varying vec4 vColor;
+uniform bool useTemplateColor;
 uniform vec3 color;
 uniform sampler2D textureVelocity;
 varying vec2 vReference;
@@ -17,5 +19,8 @@ void main() {
     vec3 z2 = 0.2 + ( 1000. - z ) / 1000. * color;
     // vec3 finalColor = mix( z2, speedColor, 0.5 ); // Blend 50/50
  
-    gl_FragColor = vec4( speedColor, 1.0 ); 
-}  
+    gl_FragColor = vec4( useTemplateColor ? vColor.rgb : speedColor, 1.0 );
+    if (useTemplateColor) {
+        #include <colorspace_fragment>
+    }
+}
