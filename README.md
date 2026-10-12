@@ -22,4 +22,18 @@ container.append(projects.element);
 ```
 
 Drag the title bar, or focus it and use arrow keys. Enter/Home resets its position.
-Mouse movement tilts the glass; reduced-motion preferences disable the tilt.
+Mouse movement across the page tilts and shifts visible windows. Reduced-motion
+preferences disable smoothing.
+
+Set `--window-depth` on any element inside a window to choose its height:
+
+```css
+#fih-shape-round + label { --window-depth: 40px; }
+.fih-release { --window-depth: 36px; }
+```
+
+Or use `style="--window-depth: 40px"` on an individual element. Depth defaults to
+zero and does not inherit. Keep containers at zero for heights relative to the
+window; raising a container adds its height to its children. Fih UI depths live
+in `src/style.css`. Avoid clipping (`overflow: hidden`) on containers with raised
+children, because it flattens their 3D layers.

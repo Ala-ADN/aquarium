@@ -1,3 +1,9 @@
+@property --window-depth {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
 .glass-window {
   position: relative;
   width: var(--window-width, 640px);
@@ -8,7 +14,8 @@
 }
 
 .glass-window__surface {
-  transform: perspective(1000px) rotateX(var(--window-rx, 0deg)) rotateY(var(--window-ry, 0deg));
+  transform: perspective(1000px) translate3d(var(--window-parallax-x, 0px), var(--window-parallax-y, 0px), 0) rotateX(var(--window-rx, 0deg)) rotateY(var(--window-ry, 0deg));
+  transform-style: preserve-3d;
   transition: transform 140ms ease-out;
 }
 
@@ -16,11 +23,14 @@
   cursor: grab;
   user-select: none;
   touch-action: none;
+  transform-style: preserve-3d;
 }
 
 .glass-window__handle h2 {
   margin: 0;
   font: inherit;
+  --window-depth: 24px;
+  translate: 0 0 var(--window-depth);
 }
 
 .glass-window__handle:focus-visible {
@@ -28,8 +38,15 @@
   outline-offset: -2px;
 }
 
-.win7 .glass-window__content {
+.win7 .glass-window__body {
   padding: 16px;
+  transform-style: preserve-3d;
+}
+
+.glass-window__content,
+.glass-window__content * {
+  transform-style: preserve-3d;
+  translate: 0 0 var(--window-depth);
 }
 
 .glass-window:focus-within, .glass-window:hover { z-index: 1; }
@@ -38,5 +55,5 @@
 .glass-window[data-dragging] .glass-window__surface { transition: none; }
 
 @media (prefers-reduced-motion: reduce) {
-  .glass-window__surface { transform: none; transition: none; }
+  .glass-window__surface { transition: none; }
 }

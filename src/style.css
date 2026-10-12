@@ -52,7 +52,6 @@ button:disabled, input:disabled { cursor: default; }
   display: grid;
   place-items: center;
   min-height: 200px;
-  overflow: hidden;
   border: 1px solid #a6a6a6;
   background: #fff;
 }
@@ -89,6 +88,19 @@ button:disabled, input:disabled { cursor: default; }
 .fih-status { margin: 12px 0 0; color: #555; font-size: 10px; line-height: 1.5; }
 .fih-reward { grid-column: 1 / -1; margin: 0; line-height: 1.5; }
 .fih-settings { min-width: 0; }
+
+/* Depths above the window panel. Containers stay at zero so each value is independent. */
+.fih-reward { --window-depth: 12px; }
+.fih-preview canvas { --window-depth: 24px; }
+.fih-shapes legend { --window-depth: 16px; }
+.fih-shapes label { --window-depth: 24px; }
+.fih-color-row label { --window-depth: 20px; }
+#fih-color { --window-depth: 32px; }
+.fih-swarm-row span { --window-depth: 16px; }
+#fih-count { --window-depth: 24px; }
+.fih-hint { --window-depth: 12px; }
+.fih-release { --window-depth: 36px; }
+.fih-status { --window-depth: 8px; }
 
 @media (max-width: 560px) {
   .fih-form { grid-template-columns: minmax(0, 1fr); gap: 16px; }

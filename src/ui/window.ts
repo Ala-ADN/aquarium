@@ -22,13 +22,15 @@ export function createWindow(title: string, content: HTMLElement) {
   heading.textContent = title;
   element.setAttribute("aria-labelledby", heading.id);
   handle.append(heading);
-  content.classList.add("window-body", "glass-window__content");
-  surface.append(handle, content);
+  const body = document.createElement("div");
+  body.className = "window-body glass-window__body";
+  content.classList.add("glass-window__content");
+  body.append(content);
+  surface.append(handle, body);
   element.append(surface);
 
   const events = new AbortController();
   const options = { signal: events.signal };
-  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let x = 0;
   let y = 0;
   let drag: { id: number; startX: number; startY: number; x: number; y: number } | null = null;
@@ -36,6 +38,8 @@ export function createWindow(title: string, content: HTMLElement) {
   function tilt(rx = 0, ry = 0) {
     element.style.setProperty("--window-rx", `${rx}deg`);
     element.style.setProperty("--window-ry", `${ry}deg`);
+    element.style.setProperty("--window-parallax-x", `${-ry * 2}px`);
+    element.style.setProperty("--window-parallax-y", `${rx * 2}px`);
   }
 
   function place(nextX: number, nextY: number) {
@@ -64,21 +68,23 @@ export function createWindow(title: string, content: HTMLElement) {
     drag = { id: event.pointerId, startX: event.clientX, startY: event.clientY, x, y };
     handle.setPointerCapture(event.pointerId);
     element.dataset.dragging = "";
-    tilt();
   }, options);
 
-  element.addEventListener("pointermove", (event) => {
+  window.addEventListener("pointermove", (event) => {
     if (drag) {
       if (event.pointerId === drag.id) move(drag.x + event.clientX - drag.startX, drag.y + event.clientY - drag.startY);
       return;
     }
-    if (event.pointerType !== "mouse" || reducedMotion.matches) return;
+    if (event.pointerType === "touch") return;
     const rect = element.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > innerHeight) {
+      tilt();
+      return;
+    }
     const px = Math.max(-1, Math.min(1, (event.clientX - rect.left) / rect.width * 2 - 1));
     const py = Math.max(-1, Math.min(1, (event.clientY - rect.top) / rect.height * 2 - 1));
-    tilt(-py * 3, px * 3);
+    tilt(-py * 6, px * 6);
   }, options);
-  element.addEventListener("pointerleave", () => { if (!drag) tilt(); }, options);
 
   const stopDrag = (event: PointerEvent) => {
     if (drag?.id !== event.pointerId) return;

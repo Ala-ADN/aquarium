@@ -10,16 +10,28 @@ const MAX_TIME = MAX_VISITOR_FIH * FIH_INTERVAL_MS;
 function readVisit(): { elapsed: number; fih: FihDesign | null } {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "null");
-    const elapsed = typeof saved?.elapsed === "number" && Number.isFinite(saved.elapsed)
-      ? Math.max(0, Math.min(saved.elapsed, MAX_TIME)) : 0;
+    const elapsed =
+      typeof saved?.elapsed === "number" && Number.isFinite(saved.elapsed)
+        ? Math.max(0, Math.min(saved.elapsed, MAX_TIME))
+        : 0;
     // Accept the previous local-preview save format.
     const fih = saved?.fih ?? saved?.fish;
     if (
-      fih && ["classic", "round", "long"].includes(fih.shape) &&
-      typeof fih.color === "string" && /^#[\da-f]{6}$/i.test(fih.color) &&
-      Number.isInteger(fih.count) && fih.count > 0 && elapsed >= FIH_INTERVAL_MS
+      fih &&
+      ["classic", "round", "long"].includes(fih.shape) &&
+      typeof fih.color === "string" &&
+      /^#[\da-f]{6}$/i.test(fih.color) &&
+      Number.isInteger(fih.count) &&
+      fih.count > 0 &&
+      elapsed >= FIH_INTERVAL_MS
     ) {
-      return { elapsed, fih: { ...fih, count: Math.min(fih.count, MAX_VISITOR_FIH, Math.floor(elapsed / FIH_INTERVAL_MS)) } };
+      return {
+        elapsed,
+        fih: {
+          ...fih,
+          count: Math.min(fih.count, MAX_VISITOR_FIH, Math.floor(elapsed / FIH_INTERVAL_MS)),
+        },
+      };
     }
     return { elapsed, fih: null };
   } catch {
@@ -32,11 +44,14 @@ function drawPreview(canvas: HTMLCanvasElement, shape: FihShape, hex: string) {
   const context = canvas.getContext("2d");
   if (!context) return;
   const color = new Color(hex);
-  const geometry = new FihGeometry({
-    bodyShape: shape,
-    bodyColor: color,
-    finColor: color.clone().multiplyScalar(0.65),
-  }, 1);
+  const geometry = new FihGeometry(
+    {
+      bodyShape: shape,
+      bodyColor: color,
+      finColor: color.clone().multiplyScalar(0.65),
+    },
+    1
+  );
   const vertices = geometry.getAttribute("position");
   const colors = geometry.getAttribute("fihColor");
   geometry.computeBoundingBox();
@@ -93,7 +108,7 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
           <output id="fih-count" aria-label="Fih earned">0 / 10</output>
         </div>
         <p class="fih-hint" id="fih-time"></p>
-        <button class="fih-release" type="submit" disabled>release into aquarium</button>
+        <button class="fih-release" type="submit" style="--window-depth: 36px" disabled>release into aquarium</button>
         <p class="fih-status" role="status">Local preview: fih are saved in this browser.</p>
         </div>
   `;
@@ -108,7 +123,8 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
   const time = app.querySelector<HTMLParagraphElement>("#fih-time")!;
   const release = app.querySelector<HTMLButtonElement>(".fih-release")!;
   const status = app.querySelector<HTMLParagraphElement>(".fih-status")!;
-  const shape = () => form.querySelector<HTMLInputElement>('input[name="shape"]:checked')!.value as FihShape;
+  const shape = () =>
+    form.querySelector<HTMLInputElement>('input[name="shape"]:checked')!.value as FihShape;
 
   function saveVisit() {
     try {
@@ -134,12 +150,13 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
     const label = `${max} / ${MAX_VISITOR_FIH}`;
     if (count.value !== label) count.value = label;
     release.disabled = !reachedFooter || max === 0;
-    const seconds = Math.max(1, Math.ceil((FIH_INTERVAL_MS - elapsed % FIH_INTERVAL_MS) / 1000));
-    time.textContent = max === MAX_VISITOR_FIH
-      ? "All 10 fih earned. They're yours to release."
-      : max === 0
-        ? `1 fih every 10 seconds. First fih in ${seconds}s.`
-        : `Next fih in ${seconds}s. You'll release all ${max}.`;
+    const seconds = Math.max(1, Math.ceil((FIH_INTERVAL_MS - (elapsed % FIH_INTERVAL_MS)) / 1000));
+    time.textContent =
+      max === MAX_VISITOR_FIH
+        ? "All 10 fih earned. They're yours to release."
+        : max === 0
+          ? `1 fih every 10 seconds. First fih in ${seconds}s.`
+          : `Next fih in ${seconds}s. You'll release all ${max}.`;
     if (max !== previousMax) saveVisit();
   }
 
@@ -148,12 +165,15 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
     preview.setAttribute("aria-label", `Preview of your ${shape()} fih in ${color.value}`);
   }
 
-  const observer = new IntersectionObserver(entries => {
-    if (!entries.some(entry => entry.isIntersecting && entry.intersectionRatio >= 1)) return;
-    reachedFooter = true;
-    observer.disconnect();
-    updateAllowance();
-  }, { threshold: 1 });
+  const observer = new IntersectionObserver(
+    (entries) => {
+      if (!entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 1)) return;
+      reachedFooter = true;
+      observer.disconnect();
+      updateAllowance();
+    },
+    { threshold: 1 }
+  );
   observer.observe(release);
   form.addEventListener("input", updatePreview);
   form.addEventListener("submit", (event) => {
@@ -161,7 +181,11 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
     tick();
     updateAllowance();
     if (release.disabled) return;
-    const design: FihDesign = { shape: shape(), color: color.value, count: Math.min(MAX_VISITOR_FIH, Math.floor(elapsed / FIH_INTERVAL_MS)) };
+    const design: FihDesign = {
+      shape: shape(),
+      color: color.value,
+      count: Math.min(MAX_VISITOR_FIH, Math.floor(elapsed / FIH_INTERVAL_MS)),
+    };
     onDisplay(design);
     released = design;
     if (saveVisit()) status.textContent = `${design.count} fih swimming. Saved in this browser.`;
@@ -176,7 +200,17 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
     onDisplay(released);
   }
   updatePreview();
-  window.setInterval(() => { tick(); updateAllowance(); }, 1000);
-  document.addEventListener("visibilitychange", () => { tick(); updateAllowance(); saveVisit(); });
-  window.addEventListener("pagehide", () => { tick(); saveVisit(); });
+  window.setInterval(() => {
+    tick();
+    updateAllowance();
+  }, 1000);
+  document.addEventListener("visibilitychange", () => {
+    tick();
+    updateAllowance();
+    saveVisit();
+  });
+  window.addEventListener("pagehide", () => {
+    tick();
+    saveVisit();
+  });
 }
