@@ -22,8 +22,10 @@ container.append(projects.element);
 ```
 
 Drag the title bar, or focus it and use arrow keys. Enter/Home resets its position.
-Mouse movement across the page tilts and shifts visible windows. Reduced-motion
-preferences disable smoothing.
+Mouse movement across the page tilts and shifts visible windows. Dragging and
+tilting ease toward their targets with a spring; dragging uses 10× the speed.
+Adjust `MOTION_SPEED` in
+`src/ui/window.ts` to change how quickly they follow.
 
 Set `--window-depth` on any element inside a window to choose its height:
 
