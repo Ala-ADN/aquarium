@@ -1,9 +1,10 @@
 import "7.css/dist/7.scoped.css";
 import "./window.css";
+import { WINDOW_MOTION } from "../constants";
 
 let nextWindowId = 0;
-const MOTION_SPEED = 50; // Higher values follow the pointer faster.
-const DRAG_MOTION_SPEED = MOTION_SPEED * 5;
+const MOTION_SPEED = WINDOW_MOTION.speed;
+const DRAG_MOTION_SPEED = MOTION_SPEED * WINDOW_MOTION.dragSpeedMultiplier;
 
 /** Shared window chrome; callers supply the content and choose its layout. */
 export function createWindow(title: string, content: HTMLElement) {
@@ -41,7 +42,7 @@ export function createWindow(title: string, content: HTMLElement) {
   ) as Record<(typeof axes)[number], { value: number; target: number; velocity: number }>;
   let frame = 0;
   let lastFrame = 0;
-  let positionSpeed = MOTION_SPEED;
+  let positionSpeed: number = MOTION_SPEED;
   let drag: { id: number; startX: number; startY: number; x: number; y: number } | null = null;
 
   function animate(now: number) {
@@ -70,8 +71,8 @@ export function createWindow(title: string, content: HTMLElement) {
     element.style.setProperty("--window-y", `${y}px`);
     element.style.setProperty("--window-rx", `${rx}deg`);
     element.style.setProperty("--window-ry", `${ry}deg`);
-    element.style.setProperty("--window-parallax-x", `${-ry * 2}px`);
-    element.style.setProperty("--window-parallax-y", `${rx * 2}px`);
+    element.style.setProperty("--window-parallax-x", `${-ry * WINDOW_MOTION.parallax}px`);
+    element.style.setProperty("--window-parallax-y", `${rx * WINDOW_MOTION.parallax}px`);
     frame = moving ? requestAnimationFrame(animate) : 0;
   }
 
@@ -139,7 +140,7 @@ export function createWindow(title: string, content: HTMLElement) {
       }
       const px = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width) * 2 - 1));
       const py = Math.max(-1, Math.min(1, ((event.clientY - rect.top) / rect.height) * 2 - 1));
-      tilt(-py * 6, px * 6);
+      tilt(-py * WINDOW_MOTION.tilt, px * WINDOW_MOTION.tilt);
     },
     options
   );
@@ -156,10 +157,10 @@ export function createWindow(title: string, content: HTMLElement) {
     "keydown",
     (event) => {
       const directions: Record<string, [number, number]> = {
-        ArrowLeft: [-16, 0],
-        ArrowRight: [16, 0],
-        ArrowUp: [0, -16],
-        ArrowDown: [0, 16],
+        ArrowLeft: [-WINDOW_MOTION.keyboardStep, 0],
+        ArrowRight: [WINDOW_MOTION.keyboardStep, 0],
+        ArrowUp: [0, -WINDOW_MOTION.keyboardStep],
+        ArrowDown: [0, WINDOW_MOTION.keyboardStep],
       };
       const step = directions[event.key];
       if (!step && !["Enter", "Home", " "].includes(event.key)) return;

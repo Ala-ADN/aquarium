@@ -1,7 +1,7 @@
 // filepath: c:\code\aquarium\src\simulation\GPUSimulation.ts
 import { WebGLRenderer, Vector3, RepeatWrapping, Texture } from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
-import { BOUNDS, BOUNDS_HALF, WIDTH } from "../constants";
+import { BOUNDS, BOUNDS_HALF, FIH_FLOCKING, WIDTH } from "../constants";
 import fragmentShaderPosition from "../fih/shader/position.glsl?raw";
 import fragmentShaderVelocity from "../fih/shader/velocity.glsl?raw";
 
@@ -64,9 +64,10 @@ export class GPUSimulation {
     this.velocityUniforms["time"] = { value: 1.0 };
     this.velocityUniforms["delta"] = { value: 0.0 };
     this.velocityUniforms["testing"] = { value: 1.0 };
-    this.velocityUniforms["separationDistance"] = { value: 1.0 };
-    this.velocityUniforms["alignmentDistance"] = { value: 1.0 };
-    this.velocityUniforms["cohesionDistance"] = { value: 1.0 };
+    this.velocityUniforms["separationDistance"] = { value: FIH_FLOCKING.separation };
+    this.velocityUniforms["alignmentDistance"] = { value: FIH_FLOCKING.alignment };
+    this.velocityUniforms["cohesionDistance"] = { value: FIH_FLOCKING.cohesion };
+    this.velocityUniforms["speedLimit"] = { value: FIH_FLOCKING.speedLimit };
     this.velocityUniforms["freedomFactor"] = { value: 1.0 };
     this.velocityUniforms["predator"] = { value: new Vector3() };
     this.velocityVariable.material.defines.BOUNDS = BOUNDS.toFixed(2);

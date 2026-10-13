@@ -17,7 +17,7 @@ float separationThresh = 0.45;
 float alignmentThresh = 0.65;
 const float UPPER_BOUNDS = BOUNDS;
 const float LOWER_BOUNDS = -UPPER_BOUNDS;
-const float SPEED_LIMIT = 9.0;
+uniform float speedLimit;
 const float PREY_RADIUS = 150.0;
 const float PREDATOR_FLEE_STRENGTH = 100.0;
 const float PREDATOR_SPEED_BOOST = 5.0;
@@ -46,7 +46,7 @@ void main() {
 	float f;
 	float percent;
 	vec3 velocity = selfVelocity;
-	float limit = SPEED_LIMIT;
+	float limit = speedLimit;
 	
 	dir = predator * UPPER_BOUNDS - selfPosition;
 	dir.z = 0.;

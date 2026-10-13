@@ -9,18 +9,21 @@ color, time, and the released swarm are saved in this browser for the local prev
 
 Press **Space** outside form controls to toggle camera debug mode without scrolling.
 Add `?debug` to keep the simulation controls visible.
+The debug menu includes live water colors, surface light, god rays, bubbles,
+flocking, and camera controls. Density, size, rise speed, and opacity multipliers
+start at 1× the values in `src/constants.ts`. Reset experiments restores those
+defaults; experiments last until reload and do not change the constants file.
 
 Shared persistence, email notifications, texture drawing, and deployment come later.
 
 The open-water backdrop uses a procedural cyan-to-blue gradient, soft refracted
 sunlight, depth haze, and a world-space particle cloud. Suspended motes drift
-through a 3D volume with perspective size, near-field softness, and distance fog;
+through a 3D volume with perspective size, glass highlights, and distance fog;
 they move with the debug camera and are occluded by fish. The main scene renders
-with antialiasing at viewport resolution, with device pixel ratio capped at 1.5.
-By default, the cloud draws 1,200 particles on desktop and 600 at widths of
-560px or less.
-Adjust the gradient colors, particle counts, and ray origin in
-`src/constants.ts`.
+with antialiasing at viewport resolution. Tune camera FOV/distance, rendering
+density, fish flocking/default color, water gradient/light/fog, bubbles, reward
+timing, and window motion in `src/constants.ts`. CSS layout and window depths
+remain in the stylesheets.
 Space freezes the water and particles together with the fish. Water effects stay on the background canvas,
 below the portfolio windows.
 
@@ -39,9 +42,8 @@ container.append(projects.element);
 
 Drag the title bar, or focus it and use arrow keys. Enter/Home resets its position.
 Mouse movement across the page tilts and shifts visible windows. Dragging and
-tilting ease toward their targets with a spring; dragging uses 10× the speed.
-Adjust `MOTION_SPEED` in
-`src/ui/window.ts` to change how quickly they follow.
+tilting ease toward their targets with a spring. Adjust `WINDOW_MOTION` in
+`src/constants.ts` for spring speed, drag speed, tilt, parallax, and keyboard steps.
 
 Set `--window-depth` on any element inside a window to choose its height:
 

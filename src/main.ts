@@ -13,8 +13,16 @@ import { FihGeometry } from "./fih/geometry/fih";
 import { GPUSimulation } from "./simulation/GPUSimulation";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { BACKGROUND_GRADIENT, MAX_FIH } from "./constants";
+import {
+  BACKGROUND_GRADIENT,
+  CAMERA_SETTINGS,
+  FIH_FIN_SHADE,
+  FIH_FLOCKING,
+  MAX_FIH,
+  MAX_RENDER_PIXEL_RATIO,
+} from "./constants";
 import { mountFihCreator } from "./ui/fih-creator";
+import { addDebugControls } from "./ui/debug";
 import { createWaterEnvironment, withWaterColor } from "./water/WaterEnvironment";
 import type { FihDesign } from "./types";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
@@ -23,12 +31,12 @@ import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
 const scene = new Scene();
 scene.background = new Color(BACKGROUND_GRADIENT.deep);
 document.body.style.backgroundColor = BACKGROUND_GRADIENT.deep;
-const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
-camera.position.z = 350;
+const camera = new PerspectiveCamera(CAMERA_SETTINGS.fov, window.innerWidth / window.innerHeight, 1, 3000);
+camera.position.z = CAMERA_SETTINGS.distance;
 
 const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
 const renderer = new WebGLRenderer({ canvas: canvas, antialias: true });
-const renderPixelRatio = () => Math.min(window.devicePixelRatio || 1, 1.5);
+const renderPixelRatio = () => Math.min(window.devicePixelRatio || 1, MAX_RENDER_PIXEL_RATIO);
 renderer.setPixelRatio(renderPixelRatio());
 renderer.setSize(window.innerWidth, window.innerHeight, false);
 
@@ -44,6 +52,7 @@ const fihUniforms = {
   time: { value: 1.0 },
   delta: { value: 0.0 },
   useTemplateColor: { value: false },
+  finShade: { value: FIH_FIN_SHADE },
 };
 
 const fihMaterial = new ShaderMaterial({
@@ -74,7 +83,7 @@ function displayFih(design: FihDesign) {
     {
       bodyShape: design.shape,
       bodyColor: color,
-      finColor: color.clone().multiplyScalar(0.65),
+      finColor: color.clone().multiplyScalar(FIH_FIN_SHADE),
     },
     design.count
   );
@@ -110,9 +119,9 @@ const debug = new URLSearchParams(window.location.search).has("debug");
 if (!debug) gui.hide();
 
 const effectController = {
-  separation: 20.0,
-  alignment: 20.0,
-  cohesion: 20.0,
+  separation: Number(FIH_FLOCKING.separation),
+  alignment: Number(FIH_FLOCKING.alignment),
+  cohesion: Number(FIH_FLOCKING.cohesion),
   paused: false,
 };
 
@@ -120,9 +129,12 @@ function setDebugMode(paused: boolean) {
   effectController.paused = paused;
   controls.enabled = paused;
   axesHelper.visible = paused;
-  if (paused || debug) gui.show();
+  if (paused || debug) {
+    gui.show();
+    if (paused) gui.open();
+  }
   else gui.hide();
-  gui.controllers.forEach((controller) => controller.updateDisplay());
+  gui.controllersRecursive().forEach((controller) => controller.updateDisplay());
 }
 
 const valuesChanger = function () {
@@ -133,11 +145,9 @@ const valuesChanger = function () {
 
 valuesChanger();
 
-gui.add(effectController, "separation", 0.0, 100.0, 1.0).onChange(valuesChanger);
-gui.add(effectController, "alignment", 0.0, 100, 0.001).onChange(valuesChanger);
-gui.add(effectController, "cohesion", 0.0, 100, 0.025).onChange(valuesChanger);
 gui.add(effectController, "paused").name("Pause Simulation").onChange(setDebugMode);
-gui.close();
+addDebugControls(gui, { water, camera, controls, scene, gpuSim, flocking: effectController, onFlockingChange: valuesChanger });
+if (!debug) gui.close();
 
 let lastTime = performance.now();
 let mouseX = 0;

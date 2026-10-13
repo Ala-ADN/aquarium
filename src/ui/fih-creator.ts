@@ -1,5 +1,5 @@
 import { Color } from "three";
-import { FIH_INTERVAL_MS, MAX_VISITOR_FIH } from "../constants";
+import { DEFAULT_FIH_COLOR, FIH_FIN_SHADE, FIH_INTERVAL_MS, MAX_VISITOR_FIH } from "../constants";
 import { FihGeometry } from "../fih/geometry/fih";
 import type { FihDesign, FihShape } from "../types";
 import { createWindow } from "./window";
@@ -48,7 +48,7 @@ function drawPreview(canvas: HTMLCanvasElement, shape: FihShape, hex: string) {
     {
       bodyShape: shape,
       bodyColor: color,
-      finColor: color.clone().multiplyScalar(0.65),
+      finColor: color.clone().multiplyScalar(FIH_FIN_SHADE),
     },
     1
   );
@@ -101,11 +101,11 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
         </fieldset>
         <div class="fih-color-row">
           <label for="fih-color">color</label>
-          <input id="fih-color" name="color" type="color" value="#ff9955">
+          <input id="fih-color" name="color" type="color" value="${DEFAULT_FIH_COLOR}">
         </div>
         <div class="fih-swarm-row">
           <span>your swarm</span>
-          <output id="fih-count" aria-label="Fih earned">0 / 10</output>
+          <output id="fih-count" aria-label="Fih earned">0 / ${MAX_VISITOR_FIH}</output>
         </div>
         <p class="fih-hint" id="fih-time"></p>
         <button class="fih-release" type="submit" style="--window-depth: 36px" disabled>release into aquarium</button>
@@ -153,9 +153,9 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
     const seconds = Math.max(1, Math.ceil((FIH_INTERVAL_MS - (elapsed % FIH_INTERVAL_MS)) / 1000));
     time.textContent =
       max === MAX_VISITOR_FIH
-        ? "All 10 fih earned. They're yours to release."
+        ? `All ${MAX_VISITOR_FIH} fih earned. They're yours to release.`
         : max === 0
-          ? `1 fih every 10 seconds. First fih in ${seconds}s.`
+          ? `1 fih every ${FIH_INTERVAL_MS / 1000} seconds. First fih in ${seconds}s.`
           : `Next fih in ${seconds}s. You'll release all ${max}.`;
     if (max !== previousMax) saveVisit();
   }

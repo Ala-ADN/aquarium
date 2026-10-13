@@ -17,9 +17,19 @@ import particleVertexShader from "./particle-vertex.glsl?raw";
 import particleFragmentShader from "./particle-fragment.glsl?raw";
 import {
   BACKGROUND_GRADIENT,
+  BACKGROUND_GRADIENT_BLEND,
+  BUBBLE_BLUR,
   BUBBLE_DENSITY,
+  BUBBLE_DRIFT,
   BUBBLE_MOBILE_BREAKPOINT,
+  BUBBLE_OPACITY,
+  BUBBLE_RISING_SPEED,
+  BUBBLE_SIZE,
+  CAMERA_SETTINGS,
+  DEPTH_FOG,
   GOD_RAY_POSITION,
+  GOD_RAY_STYLE,
+  WATER_SURFACE,
 } from "../constants";
 
 export function withWaterColor(shader: string) {
@@ -34,6 +44,14 @@ export function createWaterEnvironment(scene: Scene) {
     middleColor: { value: new Color(BACKGROUND_GRADIENT.middle) },
     surfaceColor: { value: new Color(BACKGROUND_GRADIENT.surface) },
     godRayPosition: { value: new Vector2(GOD_RAY_POSITION.x, GOD_RAY_POSITION.y) },
+    godRayStrength: { value: GOD_RAY_STYLE.strength },
+    godRaySpeed: { value: GOD_RAY_STYLE.speed },
+    waterSurfaceStrength: { value: WATER_SURFACE.strength },
+    waterSurfaceSpeed: { value: WATER_SURFACE.speed },
+    gradientMiddleHeight: { value: BACKGROUND_GRADIENT_BLEND.middleHeight },
+    gradientSurfaceStart: { value: BACKGROUND_GRADIENT_BLEND.surfaceStart },
+    gradientSurfaceStrength: { value: BACKGROUND_GRADIENT_BLEND.surfaceStrength },
+    fishFog: { value: new Vector2(DEPTH_FOG.near, DEPTH_FOG.fishFar) },
   };
 
   // Screen-space water stays continuous behind the portfolio and debug camera.
@@ -54,37 +72,50 @@ export function createWaterEnvironment(scene: Scene) {
   water.renderOrder = -100;
   scene.add(water);
 
-  // A seeded 3D cloud, independent of screen coordinates and viewport size.
-  let randomState = 173;
-  const random = () => {
-    randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
-    return randomState / 4294967296;
-  };
-  const particleCapacity = Math.max(BUBBLE_DENSITY.desktop, BUBBLE_DENSITY.mobile);
-  const positions = new Float32Array(particleCapacity * 3);
-  const seeds = new Float32Array(particleCapacity * 4);
-  for (let index = 0; index < particleCapacity; index++) {
-    // Interleave layers so the mobile subset keeps the same depth distribution.
-    const layer = index % 10;
-    const depth =
-      layer === 0 ? 90 + random() * 190
-        : layer < 5 ? 280 + random() * 470 : 750 + random() * 900;
-    const halfHeight = Math.max(140, depth * 0.84);
-    positions[index * 3] = (random() - 0.5) * depth * 2.9;
-    positions[index * 3 + 1] = (random() - 0.5) * halfHeight * 2;
-    positions[index * 3 + 2] = 350 - depth;
-    seeds[index * 4] = random();
-    seeds[index * 4 + 1] = random();
-    seeds[index * 4 + 2] = random();
-    seeds[index * 4 + 3] = halfHeight;
+  // Regenerating the seeded cloud preserves existing particles when density grows.
+  function createParticleGeometry(count: number) {
+    let randomState = 173;
+    const random = () => {
+      randomState = (Math.imul(randomState, 1664525) + 1013904223) >>> 0;
+      return randomState / 4294967296;
+    };
+    const positions = new Float32Array(count * 3);
+    const seeds = new Float32Array(count * 4);
+    for (let index = 0; index < count; index++) {
+      // Interleave layers so the mobile subset keeps the same depth distribution.
+      const layer = index % 10;
+      const depth =
+        layer === 0 ? 90 + random() * 190
+          : layer < 5 ? 280 + random() * 470 : 750 + random() * 900;
+      const halfHeight = Math.max(140, depth * 0.84);
+      positions[index * 3] = (random() - 0.5) * depth * 2.9;
+      positions[index * 3 + 1] = (random() - 0.5) * halfHeight * 2;
+      positions[index * 3 + 2] = CAMERA_SETTINGS.distance - depth;
+      seeds[index * 4] = random();
+      seeds[index * 4 + 1] = random();
+      seeds[index * 4 + 2] = random();
+      seeds[index * 4 + 3] = halfHeight;
+    }
+    const geometry = new BufferGeometry();
+    geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
+    geometry.setAttribute("particleSeed", new Float32BufferAttribute(seeds, 4));
+    return geometry;
   }
-  const geometry = new BufferGeometry();
-  geometry.setAttribute("position", new Float32BufferAttribute(positions, 3));
-  geometry.setAttribute("particleSeed", new Float32BufferAttribute(seeds, 4));
+  const density = { desktop: Number(BUBBLE_DENSITY.desktop), mobile: Number(BUBBLE_DENSITY.mobile) };
+  let viewportWidth = 1;
+  let geometry = createParticleGeometry(Math.max(density.desktop, density.mobile));
 
   const particleUniforms = {
     ...uniforms,
     pixelRatio: { value: 1 },
+    bubbleBlur: { value: BUBBLE_BLUR },
+    bubbleRiseSpeed: { value: new Vector2(BUBBLE_RISING_SPEED.min, BUBBLE_RISING_SPEED.max) },
+    bubbleSpeedVariation: { value: BUBBLE_RISING_SPEED.variation },
+    bubbleSize: { value: new Vector2(BUBBLE_SIZE.min, BUBBLE_SIZE.max) },
+    bubbleMaxPixels: { value: BUBBLE_SIZE.maxPixels },
+    bubbleOpacity: { value: new Vector2(BUBBLE_OPACITY.min, BUBBLE_OPACITY.max) },
+    bubbleDrift: { value: BUBBLE_DRIFT },
+    bubbleFog: { value: new Vector2(DEPTH_FOG.near, DEPTH_FOG.bubbleFar) },
   };
   const particles = new Points(
     geometry,
@@ -102,18 +133,33 @@ export function createWaterEnvironment(scene: Scene) {
   particles.frustumCulled = false;
   scene.add(particles);
 
+  function updateParticleCount() {
+    geometry.setDrawRange(0, viewportWidth <= BUBBLE_MOBILE_BREAKPOINT ? density.mobile : density.desktop);
+  }
+
   return {
     uniforms,
+    particleUniforms,
+    setBubbleDensity(desktop: number, mobile: number) {
+      density.desktop = Math.max(0, Math.round(desktop));
+      density.mobile = Math.max(0, Math.round(mobile));
+      const capacity = Math.max(density.desktop, density.mobile);
+      if (capacity > geometry.getAttribute("position").count) {
+        const previous = geometry;
+        geometry = createParticleGeometry(capacity);
+        particles.geometry = geometry;
+        previous.dispose();
+      }
+      updateParticleCount();
+    },
     update(delta: number) {
       uniforms.waterTime.value += delta;
     },
     resize(width: number, height: number, pixelRatio: number) {
       uniforms.viewport.value.set(Math.floor(width * pixelRatio), Math.floor(height * pixelRatio));
       particleUniforms.pixelRatio.value = pixelRatio;
-      geometry.setDrawRange(
-        0,
-        width <= BUBBLE_MOBILE_BREAKPOINT ? BUBBLE_DENSITY.mobile : BUBBLE_DENSITY.desktop
-      );
+      viewportWidth = width;
+      updateParticleCount();
     },
   };
 }
