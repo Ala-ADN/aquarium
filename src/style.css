@@ -66,6 +66,13 @@ button:disabled, input:disabled { cursor: default; }
 .win7 .fih-shapes { margin-bottom: 16px; }
 .fih-shapes .field-row + .field-row { margin-top: 6px; }
 
+/* Firefox can lose 7.css radio labels inside the window's 3D fieldset. */
+.fih-window .fih-shapes,
+.fih-window .fih-shapes * {
+  transform-style: flat;
+  translate: none;
+}
+
 .fih-color-row, .fih-swarm-row {
   display: flex;
   align-items: center;
@@ -91,8 +98,6 @@ button:disabled, input:disabled { cursor: default; }
 /* Depths above the window panel. Containers stay at zero so each value is independent. */
 .fih-reward { --window-depth: 12px; }
 .fih-preview canvas { --window-depth: 24px; }
-.fih-shapes legend { --window-depth: 16px; }
-.fih-shapes label { --window-depth: 24px; }
 .fih-color-row label { --window-depth: 20px; }
 #fih-color { --window-depth: 32px; }
 .fih-swarm-row span { --window-depth: 16px; }
