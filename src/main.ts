@@ -7,50 +7,40 @@ import {
   Mesh,
   ShaderMaterial,
   DoubleSide,
-  Texture,
   AxesHelper,
-  PlaneGeometry,
-  FrontSide,
-  TextureLoader,
-  RepeatWrapping,
 } from "three";
 import { FihGeometry } from "./fih/geometry/fih";
 import { GPUSimulation } from "./simulation/GPUSimulation";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { BOUNDS, MAX_FIH } from "./constants";
+import { BACKGROUND_GRADIENT, MAX_FIH } from "./constants";
 import { mountFihCreator } from "./ui/fih-creator";
+import { createWaterEnvironment, withWaterColor } from "./water/WaterEnvironment";
 import type { FihDesign } from "./types";
-//TODO look for tilable noise texture or generate one procedurally
-import voronoise from "./asset/voronoi_noise.png";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
-import grFragmentShader from "./god-ray/fragment.glsl?raw";
-import grVertexShader from "./god-ray/vertex.glsl?raw";
 
 const scene = new Scene();
-scene.background = new Color(0x003366);
+scene.background = new Color(BACKGROUND_GRADIENT.deep);
+document.body.style.backgroundColor = BACKGROUND_GRADIENT.deep;
 const camera = new PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 3000);
 camera.position.z = 350;
 
 const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
-const renderer = new WebGLRenderer({ canvas: canvas, antialias: false });
-const pixelScale = 2;
-renderer.setPixelRatio(1);
-renderer.setSize(
-  Math.ceil(window.innerWidth / pixelScale),
-  Math.ceil(window.innerHeight / pixelScale),
-  false
-);
-renderer.setClearColor(0x090909);
+const renderer = new WebGLRenderer({ canvas: canvas, antialias: true });
+const renderPixelRatio = () => Math.min(window.devicePixelRatio || 1, 1.5);
+renderer.setPixelRatio(renderPixelRatio());
+renderer.setSize(window.innerWidth, window.innerHeight, false);
 
 const gpuSim = new GPUSimulation(renderer);
+const water = createWaterEnvironment(scene);
+water.resize(window.innerWidth, window.innerHeight, renderer.getPixelRatio());
 
 const geometry = new FihGeometry();
 const fihUniforms = {
-  color: { value: new Color(0xec810a) },
-  texturePosition: { value: null as Texture | null },
-  textureVelocity: { value: null as Texture | null },
+  ...water.uniforms,
+  texturePosition: { value: gpuSim.getCurrentPositionTexture() },
+  textureVelocity: { value: gpuSim.getCurrentVelocityTexture() },
   time: { value: 1.0 },
   delta: { value: 0.0 },
   useTemplateColor: { value: false },
@@ -59,7 +49,7 @@ const fihUniforms = {
 const fihMaterial = new ShaderMaterial({
   uniforms: fihUniforms,
   vertexShader: fihVertexShader,
-  fragmentShader: fihFragmentShader,
+  fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
 });
 
@@ -73,7 +63,7 @@ scene.add(fihMesh);
 const visitorMaterial = new ShaderMaterial({
   uniforms: { ...fihUniforms, useTemplateColor: { value: true } },
   vertexShader: fihVertexShader,
-  fragmentShader: fihFragmentShader,
+  fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
 });
 let visitorMesh: Mesh<FihGeometry, ShaderMaterial> | null = null;
@@ -103,25 +93,6 @@ function displayFih(design: FihDesign) {
 }
 
 mountFihCreator(displayFih);
-
-const noiseTexture = new TextureLoader().load(voronoise);
-noiseTexture.wrapS = RepeatWrapping;
-noiseTexture.wrapT = RepeatWrapping;
-
-const grPlane = new PlaneGeometry(2 * BOUNDS, BOUNDS);
-const grMaterial = new ShaderMaterial({
-  side: FrontSide,
-  uniforms: {
-    time: { value: 1.0 },
-    uniformTexture: { value: noiseTexture },
-    BOUNDS: { value: BOUNDS },
-  },
-  transparent: true,
-  vertexShader: grVertexShader,
-  fragmentShader: grFragmentShader,
-});
-const grMesh = new Mesh(grPlane, grMaterial);
-scene.add(grMesh);
 
 // orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -179,7 +150,7 @@ renderer.setAnimationLoop(() => {
   lastTime = now;
 
   if (!effectController.paused) {
-    grMaterial.uniforms["time"].value = now;
+    water.update(delta);
     // Update GPU simulation uniforms
     gpuSim.positionUniforms["time"].value = now;
     gpuSim.positionUniforms["delta"].value = delta;
@@ -218,9 +189,9 @@ const resize = () => {
   windowHalfY = window.innerHeight / 2;
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
-  const width = Math.ceil(window.innerWidth / pixelScale);
-  const height = Math.ceil(window.innerHeight / pixelScale);
-  renderer.setSize(width, height, false);
+  renderer.setPixelRatio(renderPixelRatio());
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  water.resize(window.innerWidth, window.innerHeight, renderer.getPixelRatio());
 };
 addEventListener("resize", resize);
 

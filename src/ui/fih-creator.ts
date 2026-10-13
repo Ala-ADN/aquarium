@@ -165,14 +165,19 @@ export function mountFihCreator(onDisplay: (fih: FihDesign) => void) {
     preview.setAttribute("aria-label", `Preview of your ${shape()} fih in ${color.value}`);
   }
 
+  // Perspective transforms can round a fully visible button just below 1.
+  const footerVisibility = 0.999;
   const observer = new IntersectionObserver(
     (entries) => {
-      if (!entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 1)) return;
+      const visible = entries.some(
+        (entry) => entry.isIntersecting && entry.intersectionRatio >= footerVisibility
+      );
+      if (!visible) return;
       reachedFooter = true;
       observer.disconnect();
       updateAllowance();
     },
-    { threshold: 1 }
+    { threshold: footerVisibility }
   );
   observer.observe(release);
   form.addEventListener("input", updatePreview);

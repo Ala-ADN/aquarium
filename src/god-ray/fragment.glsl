@@ -1,24 +1,18 @@
-varying vec2 vUv;
-varying vec3 vWorldPosition;
-uniform sampler2D uniformTexture;
-uniform float BOUNDS;
-uniform float time;
-void main() {
-	vec2 newUV = vUv * 2.;
-    vec4 tt = texture2D(uniformTexture, newUV);
+// Soft shafts from the same point as the water's surface glow.
+float godRayIntensity(vec2 uv, float aspect, float time) {
+    vec2 source = waterLightSource();
+    vec2 fromLight = (uv - source) * vec2(aspect, 1.0);
+    float angle = atan(fromLight.x, -fromLight.y);
+    float distanceFromLight = length(fromLight);
 
-    vec2 godray = vWorldPosition.xy-vec2(BOUNDS/8., BOUNDS);
-    float uvDirection = atan(godray.y, godray.x) ;
-    float c = texture2D(uniformTexture, vec2(uvDirection,0.) + 0.00002 * time ).x;
-    float c1 = texture2D(uniformTexture, vec2(uvDirection,0.) + 0.00002 * time * 1.5).x;
-
-    float alpha = min(c, c1) ;
-    float fade = smoothstep(0.2, 3.0, abs(newUV.y)) ;  
-    
-    gl_FragColor = vec4(newUV,0.,1. );  
-    gl_FragColor = vec4(vWorldPosition, 1.);
-    gl_FragColor = vec4(tt.rgb, 1.);  
-    gl_FragColor = vec4(vec3(alpha), alpha*0.6*fade);   
+    // Two broad sets of shafts drift at different rates, with a little bend
+    // from the moving surface. Keep the gaps soft enough for text to stand out.
+    angle += sin(time * 0.75 + uv.y * 5.0) * 0.025;
+    angle += sin(time * 1.1 + uv.x * 7.0) * 0.012;
+    float broad = pow(0.5 + 0.5 * sin(angle * 22.0 + time * 0.85), 6.0);
+    float fine = pow(0.5 + 0.5 * sin(angle * 37.0 - time * 0.65 + 1.6), 9.0);
+    float shimmer = 0.8 + 0.2 * sin(time * 1.1 + angle * 6.0);
+    float depthFade = exp(-distanceFromLight * 0.85);
+    float surfaceFade = smoothstep(0.02, 0.7, uv.y);
+    return (broad + fine * 0.45) * shimmer * depthFade * surfaceFade;
 }
- 
-  

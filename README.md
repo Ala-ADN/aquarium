@@ -12,6 +12,22 @@ Add `?debug` to keep the simulation controls visible.
 
 Shared persistence, email notifications, texture drawing, and deployment come later.
 
+The open-water backdrop uses a procedural cyan-to-blue gradient, soft refracted
+sunlight, depth haze, and a world-space particle cloud. Suspended motes drift
+through a 3D volume with perspective size, near-field softness, and distance fog;
+they move with the debug camera and are occluded by fish. The main scene renders
+with antialiasing at viewport resolution, with device pixel ratio capped at 1.5.
+By default, the cloud draws 1,200 particles on desktop and 600 at widths of
+560px or less.
+Adjust the gradient colors, particle counts, and ray origin in
+`src/constants.ts`.
+Space freezes the water and particles together with the fish. Water effects stay on the background canvas,
+below the portfolio windows.
+
+God rays fan out from the upper-left surface glow, slowly sway and shimmer, and
+fade into deeper water. Particles rise at varied speeds and drift sideways and
+through depth with the current, fading as they recycle through the volume.
+
 Reusable windows live in `src/ui/window.ts` and use 7.css for Windows 7 styling.
 Pass a title and a content element:
 

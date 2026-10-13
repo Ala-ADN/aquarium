@@ -4,16 +4,20 @@ attribute vec3 fihColor;
 uniform sampler2D texturePosition;
 uniform sampler2D textureVelocity;
 varying vec4 vColor;
-varying float z;
+varying float vViewDepth;
+varying float vBodyHeight;
+varying float vFin;
 uniform float time;
-varying vec2 vReference;
+varying float vColorVariation;
 
 void main() {
-	vReference = reference;
+	vColorVariation = fract(sin(dot(reference, vec2(127.1, 311.7))) * 43758.5453);
 	vec4 tmpPos = texture2D( texturePosition, reference );
 	vec3 pos = tmpPos.xyz;
 	vec3 velocity = normalize(texture2D( textureVelocity, reference ).xyz);
 	vec3 newPosition = position;
+    vBodyHeight = position.y;
+    vFin = fihVertex < 3.0 ? 1.0 : 0.0;
     if (fihVertex == 0.0 || fihVertex == 1.0) {
         // Tail fin
         newPosition.z += sin(tmpPos.w * 0.5) * 1.5;
@@ -21,9 +25,9 @@ void main() {
     }
 	newPosition = mat3( modelMatrix ) * newPosition;
 	velocity.z *= -1.;
-	float xz = length( velocity.xz );
+	float xz = max(length( velocity.xz ), 0.0001);
 	float xyz = 1.;
-	float x = sqrt( 1. - velocity.y * velocity.y );
+	float x = sqrt( max(0.0, 1. - velocity.y * velocity.y) );
 	float cosry = velocity.x / xz;
 	float sinry = velocity.z / xz;
 	float cosrz = x / xyz;
@@ -40,7 +44,8 @@ void main() {
 	);
 	newPosition =  maty * matz * newPosition;
 	newPosition += pos;
-	z = newPosition.z;
 	vColor = vec4( fihColor, 1.0 );
-	gl_Position = projectionMatrix *  viewMatrix  * vec4( newPosition, 1.0 );
+	vec4 viewPosition = viewMatrix * vec4(newPosition, 1.0);
+	vViewDepth = -viewPosition.z;
+	gl_Position = projectionMatrix * viewPosition;
 }

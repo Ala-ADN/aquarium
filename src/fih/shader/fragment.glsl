@@ -1,26 +1,28 @@
-varying float z;
 varying vec4 vColor;
+varying float vViewDepth;
+varying float vBodyHeight;
+varying float vFin;
+varying float vColorVariation;
 uniform bool useTemplateColor;
-uniform vec3 color;
-uniform sampler2D textureVelocity;
-varying vec2 vReference;
+#include <water_color>
+
 void main() {
-    // Sample velocity and calculate speed
-    vec3 velocity = texture2D( textureVelocity, vReference ).xyz;
-    float speed = length( velocity );
-    
-    // Normalize speed (SPEED_LIMIT is 9.0, can go up to 14.0 with boost)
-    float normalizedSpeed = clamp( speed / 14.0, 0.1, 0.8 );
-    //TODO less red (clamp)
-    // Mix color based on speed (slow = blue, fast = red)
-    vec3 speedColor = mix( vec3(0.0, 0.3, 1.0), vec3(1.0, 0.2, 0.0), normalizedSpeed );
-    
-    // Combine with depth-based color
-    vec3 z2 = 0.2 + ( 1000. - z ) / 1000. * color;
-    // vec3 finalColor = mix( z2, speedColor, 0.5 ); // Blend 50/50
- 
-    gl_FragColor = vec4( useTemplateColor ? vColor.rgb : speedColor, 1.0 );
-    if (useTemplateColor) {
-        #include <colorspace_fragment>
-    }
+    // Linear colors; both the default school and visitor colors use sRGB output.
+    vec3 schoolColor = mix(vec3(0.012, 0.26, 0.38), vec3(0.025, 0.48, 0.42), vColorVariation);
+    schoolColor *= mix(1.0, 0.65, vFin);
+    vec3 color = useTemplateColor ? vColor.rgb : schoolColor;
+
+    float topLight = smoothstep(-3.0, 4.0, vBodyHeight);
+    color *= mix(0.86, 1.05, topLight);
+    float highlight = exp(-pow((vBodyHeight - 1.15) / 0.85, 2.0));
+    color = mix(color, surfaceColor, highlight * 0.1 * (1.0 - vFin));
+
+    vec2 screenUv = gl_FragCoord.xy / viewport;
+    float caustic = pow(0.5 + 0.5 * sin(screenUv.x * 38.0 + screenUv.y * 22.0 + waterTime * 0.18), 10.0);
+    color = mix(color, surfaceColor, caustic * 0.025);
+    float fog = smoothstep(160.0, 1000.0, vViewDepth);
+    color = mix(color, waterColor(screenUv), fog);
+
+    gl_FragColor = vec4(color, 1.0);
+    #include <colorspace_fragment>
 }
