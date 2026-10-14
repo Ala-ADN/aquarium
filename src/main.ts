@@ -10,6 +10,8 @@ import {
   AxesHelper,
 } from "three";
 import { FihGeometry } from "./fih/geometry/fih";
+import { fihTemplate } from "./fih/appearance";
+import { getPatternTexture } from "./fih/pattern-texture";
 import { GPUSimulation } from "./simulation/GPUSimulation";
 import { GUI } from "three/addons/libs/lil-gui.module.min.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
@@ -53,6 +55,9 @@ const fihUniforms = {
   delta: { value: 0.0 },
   useTemplateColor: { value: false },
   finShade: { value: FIH_FIN_SHADE },
+  patternMask: { value: getPatternTexture("plain") },
+  patternColor: { value: new Color() },
+  releaseGlow: { value: 0 },
 };
 
 const fihMaterial = new ShaderMaterial({
@@ -70,21 +75,23 @@ fihMesh.updateMatrix();
 scene.add(fihMesh);
 
 const visitorMaterial = new ShaderMaterial({
-  uniforms: { ...fihUniforms, useTemplateColor: { value: true } },
+  uniforms: { ...fihUniforms, useTemplateColor: { value: true },
+    patternMask: { value: getPatternTexture("plain") },
+    patternColor: { value: new Color() }, releaseGlow: { value: 0 } },
   vertexShader: fihVertexShader,
   fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
 });
 let visitorMesh: Mesh<FihGeometry, ShaderMaterial> | null = null;
+let releasedAt = -Infinity;
+let restoringVisit = true;
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function displayFih(design: FihDesign) {
-  const color = new Color(design.color);
+  visitorMaterial.uniforms.patternMask.value = getPatternTexture("plain");
+  releasedAt = restoringVisit || reducedMotion.matches ? -Infinity : performance.now();
   const visitorGeometry = new FihGeometry(
-    {
-      bodyShape: design.shape,
-      bodyColor: color,
-      finColor: color.clone().multiplyScalar(FIH_FIN_SHADE),
-    },
+    fihTemplate(design),
     design.count
   );
   geometry.setDrawRange(design.count * 9, (MAX_FIH - design.count) * 9);
@@ -102,6 +109,7 @@ function displayFih(design: FihDesign) {
 }
 
 mountFihCreator(displayFih);
+restoringVisit = false;
 
 // orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -158,6 +166,7 @@ renderer.setAnimationLoop(() => {
   let delta = (now - lastTime) / 1000;
   if (delta > 1) delta = 1; // safety cap on large deltas
   lastTime = now;
+  visitorMaterial.uniforms.releaseGlow.value = reducedMotion.matches ? 0 : Math.max(0, 1 - (now - releasedAt) / 800);
 
   if (!effectController.paused) {
     water.update(delta);

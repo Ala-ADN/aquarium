@@ -1,6 +1,9 @@
 attribute vec2 reference;
-attribute float fihVertex;
+attribute float fihPart;
+attribute float tailWeight;
 attribute vec3 fihColor;
+attribute vec2 bodyUv;
+varying vec2 vBodyUv;
 uniform sampler2D texturePosition;
 uniform sampler2D textureVelocity;
 varying vec4 vColor;
@@ -11,14 +14,15 @@ uniform float time;
 varying float vColorVariation;
 
 void main() {
+    vBodyUv = bodyUv;
 	vColorVariation = fract(sin(dot(reference, vec2(127.1, 311.7))) * 43758.5453);
 	vec4 tmpPos = texture2D( texturePosition, reference );
 	vec3 pos = tmpPos.xyz;
 	vec3 velocity = normalize(texture2D( textureVelocity, reference ).xyz);
 	vec3 newPosition = position;
     vBodyHeight = position.y;
-    vFin = fihVertex < 3.0 ? 1.0 : 0.0;
-    if (fihVertex == 0.0 || fihVertex == 1.0) {
+    vFin = fihPart < 0.5 ? 1.0 : 0.0;
+    if (tailWeight > 0.5) {
         // Tail fin
         newPosition.z += sin(tmpPos.w * 0.5) * 1.5;
         newPosition.x += cos(tmpPos.w * 0.5) * 1.0;
