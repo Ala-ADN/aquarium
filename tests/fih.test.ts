@@ -5,7 +5,7 @@ import { FIH_PRESETS } from "../src/fih/presets";
 import { FihGeometry } from "../src/fih/geometry/fih";
 import { getPatternMask, MASK_HEIGHT, MASK_WIDTH } from "../src/fih/patterns";
 import { advanceVisit, earnedFih, LEGACY_STORAGE_KEY, PREVIOUS_STORAGE_KEY, parseVisit, readVisit, saveVisit, VISIT_STORAGE_KEY } from "../src/fih/visit";
-import { FIN_SHAPES, HEAD_SHAPES } from "../src/fih/parts";
+import { createFihParts, FIN_SHAPES, HEAD_SHAPES } from "../src/fih/parts";
 import { WIDTH } from "../src/constants";
 
 describe("preset geometry", () => {
@@ -71,19 +71,15 @@ describe("appearance and randomization", () => {
       }
     }
   });
-  it("undo restores all fields and manual edits clear undo", () => {
+  it("keeps manual changes independent and spins across the full size range", () => {
     const original = { ...DEFAULT_APPEARANCE, finColor: "#123456", headColor: "#654321", headShape: "blunt" as const, finSize: 1.25 };
     const draft = new FihDraft(original);
-    draft.surprise(() => 0);
-    expect(draft.canUndo).toBe(true);
-    draft.undo();
-    expect(draft.appearance).toEqual(original);
-    expect(draft.canUndo).toBe(false);
-    draft.surprise();
     draft.change({ color: "#abcdef" });
-    expect(draft.canUndo).toBe(false);
-    draft.undo();
-    expect(draft.appearance.color).toBe("#abcdef");
+    expect(draft.appearance).toEqual({ ...original, color: "#abcdef" });
+    draft.surprise(() => 0);
+    expect([draft.appearance.finSize, draft.appearance.bodySize, draft.appearance.headSize]).toEqual([.6, .6, .6]);
+    draft.surprise(() => .999999);
+    expect([draft.appearance.finSize, draft.appearance.bodySize, draft.appearance.headSize]).toEqual([1.5, 1.5, 1.5]);
   });
 });
 
@@ -145,15 +141,15 @@ describe("visitor persistence and earning", () => {
 describe("assembled parts", () => {
   it("joins all 96 combinations at every size extreme with finite non-degenerate triangles", () => {
     for (const body of FIH_PRESETS) for (const fin of FIN_SHAPES) for (const head of HEAD_SHAPES) {
-      for (const size of [.6, 1, 1.5]) {
+      for (const bodySize of [.6, 1, 1.5]) for (const headSize of [.6, 1, 1.5]) {
         const appearance = { ...DEFAULT_APPEARANCE, shape: body.id, finShape: fin.id, headShape: head.id,
-          finSize: size, bodySize: size, headSize: size, finColor: "#70c7ff", headColor: "#ff8fbd" };
+          finSize: headSize, bodySize, headSize, finColor: "#70c7ff", headColor: "#ff8fbd" };
         const geometry = new FihGeometry(fihTemplate(appearance), 1);
         const positions = geometry.getAttribute("position");
         const parts = geometry.getAttribute("fihPart");
         const tail = geometry.getAttribute("tailWeight");
         const colors = geometry.getAttribute("fihColor");
-        const neck = body.length * size * .67 * .2;
+        const neck = body.length * bodySize * .67 * .2;
         const bodySeam = new Set<string>();
         const headSeam = new Set<string>();
         for (let i = 0; i < positions.count; i++) {
@@ -175,6 +171,29 @@ describe("assembled parts", () => {
           expect(Math.abs(area)).toBeGreaterThan(.000001);
         }
         geometry.dispose();
+      }
+    }
+  });
+  it("shares exactly two point objects, controlled by body size alone", () => {
+    for (const body of FIH_PRESETS) for (const head of HEAD_SHAPES) {
+      let smallBodySeam: readonly (readonly [number, number])[] = [];
+      for (const bodySize of [.6, 1.5]) {
+        let previousSeam: readonly (readonly [number, number])[] | undefined;
+        let previousTip = 0;
+        for (const headSize of [.6, 1, 1.5]) {
+          const parts = createFihParts({ bodyShape: body.id, headShape: head.id, bodySize, headSize });
+          const bodyPoints = new Set(parts.filter((part) => part.part === "body").flatMap((part) => part.points));
+          const headPoints = new Set(parts.filter((part) => part.part === "head").flatMap((part) => part.points));
+          const shared = [...bodyPoints].filter((point) => headPoints.has(point)).sort((a, b) => a[1] - b[1]);
+          expect(shared).toHaveLength(2);
+          if (previousSeam) expect(shared).toEqual(previousSeam);
+          previousSeam = shared;
+          const tip = Math.max(...[...headPoints].map(([z]) => z));
+          expect(tip).toBeGreaterThan(previousTip);
+          previousTip = tip;
+        }
+        if (bodySize === .6) smallBodySeam = previousSeam!;
+        else expect(previousSeam).not.toEqual(smallBodySeam);
       }
     }
   });

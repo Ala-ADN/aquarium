@@ -44,6 +44,17 @@ export function createWindow(title: string, content: HTMLElement) {
   let lastFrame = 0;
   let positionSpeed: number = MOTION_SPEED;
   let drag: { id: number; startX: number; startY: number; x: number; y: number } | null = null;
+  let tiltPaused = false;
+
+  function setTiltPaused(paused: boolean) {
+    tiltPaused = paused;
+    if (!paused) return;
+    // Hold the rendered angle, rather than easing to neutral under a control.
+    for (const axis of ["rx", "ry"] as const) {
+      motion[axis].target = motion[axis].value;
+      motion[axis].velocity = 0;
+    }
+  }
 
   function animate(now: number) {
     const dt = Math.min((now - lastFrame) / 1000, 0.05);
@@ -132,7 +143,7 @@ export function createWindow(title: string, content: HTMLElement) {
           move(drag.x + event.clientX - drag.startX, drag.y + event.clientY - drag.startY);
         return;
       }
-      if (event.pointerType === "touch") return;
+      if (event.pointerType === "touch" || tiltPaused) return;
       const rect = element.getBoundingClientRect();
       if (rect.bottom < 0 || rect.top > innerHeight) {
         tilt();
@@ -182,6 +193,7 @@ export function createWindow(title: string, content: HTMLElement) {
 
   return {
     element,
+    setTiltPaused,
     destroy() {
       cancelAnimationFrame(frame);
       events.abort();

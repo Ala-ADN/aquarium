@@ -2,16 +2,20 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountFihCreator } from "../src/ui/fih-creator";
 import { VISIT_STORAGE_KEY, PREVIOUS_STORAGE_KEY, LEGACY_STORAGE_KEY } from "../src/fih/visit";
-import { DEFAULT_APPEARANCE } from "../src/fih/appearance";
+import { DEFAULT_APPEARANCE, FIH_PALETTE } from "../src/fih/appearance";
 
 vi.mock("../src/ui/fih-preview", () => ({ drawFihPreview: vi.fn() }));
 let creator: ReturnType<typeof mountFihCreator>;
 let intersect: IntersectionObserverCallback;
 const find = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
+const reel = (part: string) => find(`.fih-lane[data-part="${part}"] .fih-reel`);
+const shape = (part: string) => reel(part).dataset.shape;
 const choose = (part: string, control: string, value: string) => {
-  const input = find<HTMLSelectElement>(`#fih-${part}-${control}`);
-  input.value = value;
-  input.dispatchEvent(new Event("change", { bubbles: true }));
+  if (control === "color") { inputValue(`#fih-${part}-picker`, value); return; }
+  for (let i = 0; i < Number(reel(part).getAttribute("aria-valuemax")) && shape(part) !== value; i++) {
+    find<HTMLButtonElement>(`[data-part="${part}"] [data-direction="1"]`).click();
+  }
+  expect(shape(part)).toBe(value);
 };
 const inputValue = (selector: string, value: string) => {
   const input = find<HTMLInputElement>(selector);
@@ -34,12 +38,12 @@ describe("three-lane creator", () => {
   it("offers three independently selectable parts and releases only on submit", () => {
     const display = vi.fn(); creator = mountFihCreator(display);
     expect(document.querySelectorAll(".fih-lane")).toHaveLength(3);
-    expect(find<HTMLSelectElement>("#fih-fin-shape").options).toHaveLength(4);
-    expect(find<HTMLSelectElement>("#fih-body-shape").options).toHaveLength(6);
-    expect(find<HTMLSelectElement>("#fih-head-shape").options).toHaveLength(4);
+    expect(reel("fin").getAttribute("aria-valuemax")).toBe("4");
+    expect(reel("body").getAttribute("aria-valuemax")).toBe("6");
+    expect(reel("head").getAttribute("aria-valuemax")).toBe("4");
     vi.advanceTimersByTime(10_000);
     expect(find<HTMLButtonElement>(".fih-release").disabled).toBe(true);
-    find<HTMLSelectElement>("#fih-fin-shape").focus();
+    reel("fin").focus();
     choose("fin", "shape", "fork"); choose("body", "shape", "round"); choose("head", "shape", "blunt");
     choose("fin", "color", "#ff8fbd"); choose("body", "color", "#70c7ff"); choose("head", "color", "#ffd166");
     inputValue("#fih-fin-size", "1.25"); inputValue("#fih-body-size", ".8"); inputValue("#fih-head-size", "1.4");
@@ -57,33 +61,34 @@ describe("three-lane creator", () => {
   it("wraps individual reels without changing the other columns", () => {
     creator = mountFihCreator(vi.fn());
     find<HTMLButtonElement>('[data-part="fin"] [data-direction="-1"]').click();
-    expect(find<HTMLSelectElement>("#fih-fin-shape").value).toBe("ribbon");
-    expect(find<HTMLSelectElement>("#fih-body-shape").value).toBe("classic");
-    expect(find<HTMLSelectElement>("#fih-head-shape").value).toBe("pointed");
+    expect(shape("fin")).toBe("ribbon");
+    expect(shape("body")).toBe("classic");
+    expect(shape("head")).toBe("pointed");
     find<HTMLButtonElement>('[data-part="fin"] [data-direction="1"]').click();
-    expect(find<HTMLSelectElement>("#fih-fin-shape").value).toBe("triangle");
+    expect(shape("fin")).toBe("triangle");
   });
-  it("spins only the draft and undo restores every part's settings", () => {
+  it("spins shapes, sizes, and palette colors without releasing the draft", () => {
     const display = vi.fn(); creator = mountFihCreator(display);
     choose("head", "shape", "beak"); inputValue("#fih-head-size", "1.5");
     vi.spyOn(Math, "random").mockReturnValue(0);
     find<HTMLButtonElement>(".fih-spin").click();
-    expect(find<HTMLSelectElement>("#fih-head-shape").value).toBe("pointed");
-    expect(find(".fih-undo").hidden).toBe(false);
+    expect(shape("head")).toBe("pointed");
     expect(display).not.toHaveBeenCalled();
-    find<HTMLButtonElement>(".fih-undo").click();
-    expect(find<HTMLSelectElement>("#fih-head-shape").value).toBe("beak");
-    expect(find<HTMLInputElement>("#fih-head-size").value).toBe("1.5");
-    expect(find(".fih-undo").hidden).toBe(true);
-    expect(document.activeElement).toBe(find(".fih-spin"));
+    for (const part of ["fin", "body", "head"]) {
+      expect(find<HTMLInputElement>(`#fih-${part}-size`).value).toBe("0.6");
+      expect(find<HTMLInputElement>(`#fih-${part}-picker`).value).toBe(FIH_PALETTE[0].hex);
+    }
+    vi.advanceTimersByTime(10_000); reel("head").focus(); submit();
+    expect(display.mock.lastCall?.[0]).toMatchObject({ finSize: .6, bodySize: .6, headSize: .6,
+      color: FIH_PALETTE[0].hex, headColor: FIH_PALETTE[0].hex, finColor: FIH_PALETTE[0].hex });
   });
-  it("keeps all special effects locked after spins and manual edits", () => {
+  it("removes dropdowns, special effects, and undo while retaining plain designs", () => {
     const display = vi.fn(); creator = mountFihCreator(display);
-    expect(document.querySelectorAll(".fih-effects button:disabled")).toHaveLength(3);
+    expect(document.querySelector("select, .fih-effects, .fih-undo")).toBeNull();
     for (let i = 0; i < 5; i++) find<HTMLButtonElement>(".fih-spin").click();
-    vi.advanceTimersByTime(10_000); find<HTMLSelectElement>("#fih-head-shape").focus(); submit();
+    vi.advanceTimersByTime(10_000); reel("head").focus(); submit();
     expect(display.mock.lastCall?.[0].pattern).toBe("plain");
-    expect(document.querySelectorAll(".fih-effects button:disabled")).toHaveLength(3);
+    expect(document.querySelector("select, .fih-effects, .fih-undo")).toBeNull();
   });
   it("updates inherited head and fin colors and supports independent custom colors", () => {
     const display = vi.fn(); creator = mountFihCreator(display);
@@ -92,10 +97,9 @@ describe("three-lane creator", () => {
     expect(find<HTMLInputElement>("#fih-head-picker").value).toBe("#70c7ff");
     expect(find<HTMLInputElement>("#fih-fin-picker").value).not.toBe(oldFin);
     inputValue("#fih-head-picker", "#123456");
-    expect(find<HTMLSelectElement>("#fih-head-color").value).toBe("custom");
     choose("body", "color", "#ffd166");
     expect(find<HTMLInputElement>("#fih-head-picker").value).toBe("#123456");
-    vi.advanceTimersByTime(10_000); find<HTMLSelectElement>("#fih-head-shape").focus(); submit();
+    vi.advanceTimersByTime(10_000); reel("head").focus(); submit();
     expect(display.mock.lastCall?.[0].headColor).toBe("#123456");
   });
   it("migrates v1 and v2 saves and restores three-part v3 designs", () => {
@@ -108,12 +112,12 @@ describe("three-lane creator", () => {
     localStorage.setItem(PREVIOUS_STORAGE_KEY, JSON.stringify({ elapsed: 30_000, fih: { shape: "sail", color: "#ff9955", finColor: "#ffffff", pattern: "spots", count: 2 } }));
     creator = mountFihCreator(display);
     expect(display.mock.lastCall?.[0].pattern).toBe("plain");
-    expect(find<HTMLSelectElement>("#fih-fin-color").value).toBe("custom");
+    expect(find<HTMLInputElement>("#fih-fin-picker").value).toBe("#ffffff");
     creator.destroy();
     localStorage.setItem(VISIT_STORAGE_KEY, JSON.stringify({ elapsed: 30_000, fih: { ...DEFAULT_APPEARANCE, finShape: "fan", headShape: "round", headColor: "#123456", bodySize: 1.2, count: 2 } }));
     creator = mountFihCreator(display);
-    expect(find<HTMLSelectElement>("#fih-fin-shape").value).toBe("fan");
-    expect(find<HTMLSelectElement>("#fih-head-shape").value).toBe("round");
+    expect(shape("fin")).toBe("fan");
+    expect(shape("head")).toBe("round");
     expect(find<HTMLInputElement>("#fih-body-size").value).toBe("1.2");
   });
   it("accepts partial visibility and releases despite storage failure", () => {
@@ -132,7 +136,92 @@ describe("three-lane creator", () => {
     vi.advanceTimersByTime(30_000); expect(find<HTMLOutputElement>("#fih-count").value).toBe("0 / 10");
     hidden = false; document.dispatchEvent(new Event("visibilitychange"));
     vi.advanceTimersByTime(5000); expect(find<HTMLOutputElement>("#fih-count").value).toBe("1 / 10");
-    vi.advanceTimersByTime(200_000); find<HTMLSelectElement>("#fih-body-shape").focus(); submit();
+    vi.advanceTimersByTime(200_000); reel("body").focus(); submit();
     expect(display.mock.lastCall?.[0].count).toBe(10);
+  });
+  it("cycles only the hovered slot with the mouse wheel and keeps page scrolling outside it", () => {
+    creator = mountFihCreator(vi.fn());
+    const wheel = new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true });
+    reel("fin").dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(true);
+    expect(shape("fin")).toBe("fork");
+    expect(shape("body")).toBe("classic");
+    expect(shape("head")).toBe("pointed");
+    reel("fin").dispatchEvent(new WheelEvent("wheel", { deltaY: -100, cancelable: true }));
+    expect(shape("fin")).toBe("triangle");
+    const outside = new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true });
+    find(".fih-preview").dispatchEvent(outside);
+    expect(outside.defaultPrevented).toBe(false);
+    expect(shape("fin")).toBe("triangle");
+  });
+  it("accumulates trackpad motion, supports line/page wheels, and leaves zoom alone", () => {
+    creator = mountFihCreator(vi.fn());
+    for (let i = 0; i < 3; i++) reel("body").dispatchEvent(new WheelEvent("wheel", { deltaY: 10 }));
+    expect(shape("body")).toBe("classic");
+    reel("body").dispatchEvent(new WheelEvent("wheel", { deltaY: 10 }));
+    expect(shape("body")).toBe("round");
+    reel("body").dispatchEvent(new WheelEvent("wheel", { deltaY: 3, deltaMode: 1 }));
+    expect(shape("body")).toBe("long");
+    reel("body").dispatchEvent(new WheelEvent("wheel", { deltaY: -1, deltaMode: 2 }));
+    expect(shape("body")).toBe("round");
+    const zoom = new WheelEvent("wheel", { deltaY: 100, cancelable: true });
+    // happy-dom's WheelEvent omits MouseEvent modifier properties.
+    Object.defineProperty(zoom, "ctrlKey", { value: true });
+    reel("body").dispatchEvent(zoom);
+    expect(zoom.defaultPrevented).toBe(false);
+    expect(shape("body")).toBe("round");
+  });
+  it("supports keyboard cycling and announces the selected shape", () => {
+    creator = mountFihCreator(vi.fn());
+    const head = reel("head");
+    head.focus();
+    head.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowUp", bubbles: true }));
+    expect(shape("head")).toBe("beak");
+    expect(head.getAttribute("aria-valuenow")).toBe("4");
+    expect(head.getAttribute("aria-valuetext")).toBe("beak");
+    head.dispatchEvent(new KeyboardEvent("keydown", { key: "Home", bubbles: true }));
+    expect(shape("head")).toBe("pointed");
+    head.dispatchEvent(new KeyboardEvent("keydown", { key: "End", bubbles: true }));
+    expect(shape("head")).toBe("beak");
+    expect(document.activeElement).toBe(head);
+  });
+  it("captures wheel input for the entire slot before page handlers run", () => {
+    creator = mountFihCreator(vi.fn());
+    const pageWheel = vi.fn();
+    document.addEventListener("wheel", pageWheel, { once: true });
+    const slot = find('[data-part="head"]');
+    const wheel = new WheelEvent("wheel", { deltaY: 100, cancelable: true, bubbles: true });
+    slot.dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(true);
+    expect(pageWheel).not.toHaveBeenCalled();
+    expect(shape("head")).toBe("round");
+    document.removeEventListener("wheel", pageWheel);
+  });
+  it("routes wheel events through visual slot bounds when a 3D ancestor is hit", () => {
+    creator = mountFihCreator(vi.fn());
+    const slot = find('[data-part="body"]');
+    vi.spyOn(slot, "getBoundingClientRect").mockReturnValue({
+      x: 600, y: 100, left: 600, right: 680, top: 100, bottom: 400,
+      width: 80, height: 300, toJSON() {},
+    });
+    const wheel = new WheelEvent("wheel", {
+      clientX: 640, clientY: 250, deltaY: 100, cancelable: true, bubbles: true,
+    });
+    // happy-dom's WheelEvent does not inherit MouseEvent coordinates either.
+    Object.defineProperties(wheel, { clientX: { value: 640 }, clientY: { value: 250 } });
+    find(".glass-window__surface").dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(true);
+    expect(shape("body")).toBe("round");
+    expect(slot.hasAttribute("data-hovered")).toBe(true);
+  });
+  it("updates and disposes the live preview with the draft", () => {
+    const live = { update: vi.fn(), resize: vi.fn(), destroy: vi.fn() };
+    const createPreview = vi.fn(() => live);
+    creator = mountFihCreator(vi.fn(), createPreview);
+    expect(createPreview).toHaveBeenCalledWith(find(".fih-preview canvas"), DEFAULT_APPEARANCE);
+    inputValue("#fih-head-size", "1.5");
+    expect(live.update).toHaveBeenLastCalledWith({ ...DEFAULT_APPEARANCE, headSize: 1.5 });
+    creator.destroy();
+    expect(live.destroy).toHaveBeenCalledTimes(1);
   });
 });

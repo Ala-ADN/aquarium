@@ -81,10 +81,10 @@ describe("customization preserves the original window motion", () => {
     expect(value("parallax-y")).toBe(-12);
   });
 
-  it("continues tilting while editing native customization controls and spinning", () => {
-    const shape = panel.querySelector<HTMLSelectElement>("#fih-body-shape")!;
-    shape.value = "round";
-    shape.dispatchEvent(new Event("change", { bubbles: true }));
+  it("holds tilt steady over slots and resumes after leaving them", () => {
+    point(window, 880, 100);
+    const shape = panel.querySelector<HTMLElement>('[data-part="body"] .fih-reel')!;
+    shape.dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true }));
     point(shape, 880, 100);
     expect(value("ry")).toBe(6);
     expect(panel.querySelector(".fih-description")!.textContent).toContain("chubby body");
@@ -92,15 +92,39 @@ describe("customization preserves the original window motion", () => {
     size.value = "1.5";
     size.dispatchEvent(new Event("input", { bubbles: true }));
     point(size, 120, 580);
-    expect(value("ry")).toBe(-6);
+    expect(value("ry")).toBe(6);
     expect(panel.querySelector<HTMLOutputElement>("#fih-head-size-value")!.value).toBe("150%");
     const spin = panel.querySelector<HTMLButtonElement>(".fih-spin")!;
     spin.click();
     point(spin, 880, 100);
     expect(value("parallax-x")).toBe(-12);
-    panel.querySelector<HTMLButtonElement>(".fih-undo")!.click();
-    expect(shape.value).toBe("round");
-    expect(size.value).toBe("1.5");
+    expect(panel.querySelector(".fih-undo")).toBeNull();
+    const color = panel.querySelector<HTMLInputElement>("#fih-head-picker")!;
+    color.value = "#123456";
+    color.dispatchEvent(new Event("input", { bubbles: true }));
+    point(color, 120, 580);
+    expect(value("parallax-x")).toBe(-12);
+    point(window, 120, 580);
+    expect(value("ry")).toBe(-6);
+    expect(value("parallax-x")).toBe(12);
+  });
+
+  it("freezes an in-flight spring at its rendered angle when a slot is entered", () => {
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 880, clientY: 100, pointerType: "mouse", bubbles: true,
+    }));
+    const pending = [...frames.values()];
+    frames.clear();
+    vi.advanceTimersByTime(16);
+    pending.forEach((callback) => callback(performance.now()));
+    const angle = value("ry");
+    expect(angle).toBeGreaterThan(0);
+    expect(angle).toBeLessThan(6);
+    const reel = panel.querySelector<HTMLElement>(".fih-reel")!;
+    point(reel, 120, 580);
+    expect(value("ry")).toBe(angle);
+    point(reel, 880, 100);
+    expect(value("ry")).toBe(angle);
   });
 
   it("retains title-bar dragging and keyboard reset", () => {

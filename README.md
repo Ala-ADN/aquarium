@@ -6,23 +6,39 @@ The wide fih window lives in the footer, after the space reserved for experience
 and project windows. Visitors earn one fih every 10 seconds with the page visible,
 capped at 10. Reaching the footer lets them release their full earned swarm.
 
-The creator has independent **fin**, **body**, and **head** columns. Each offers
-shape reels, a named color palette, a custom color picker, and a 60–150% size
-slider. Fin and head colors can follow the body. The assembled preview and the
-released swarm use the same connected geometry. **Spin all** randomizes the draft;
-**undo spin** restores the preceding combination until a manual edit. Release
-applies the design to the full earned swarm; unreleased edits are not saved.
-Stripes, spots, and neon glow remain locked placeholders.
+The creator places a **4:3 preview on the left** and three narrow **fin**, **body**,
+and **head** slots on the right. Scroll over a slot to cycle its shape; small
+trackpad movements accumulate. Hovering any part of a slot holds the window's
+current tilt steady; wheel events take priority over page scrolling, including
+when a 3D hit lands on the window behind the slot. Leaving resumes tilt. The arrow
+buttons and Up/Down/Home/End keys offer the same selection. Each part has a custom
+color picker and a 60–150% size slider. There are no shape/color dropdowns, special
+effects panel, or undo action. **Spin all** randomizes shapes, sizes across the
+full slider range, and colors from the built-in palette. Release applies the
+design to the full earned swarm; unreleased edits are not saved.
+
+The preview and released swarm use the same connected geometry. The body and head
+share two seam points controlled by body size. Head size scales the remaining
+head points around the seam center without moving the shared connection.
+The preview uses the aquarium's swimming shader and lighting, without triangle
+outlines at the head/body join. Its camera magnification and center stay fixed:
+the size sliders change the visible fish size, never a fit-to-frame scale. A
+larger transparent drawing area allows oversized fish to extend beyond the 4:3
+frame without clipping. Tail motion and gentle swimming follow the tank's pause
+state and stop rendering offscreen or in a hidden tab.
 
 Released designs and earned time are saved as `aquarium.visitor.v3`. Older v1/v2
 saves migrate without deleting the original data. Storage errors still permit
 release during the current visit. All controls support the keyboard, and the
-three part columns remain side by side on mobile.
+three part columns remain side by side on mobile, with the 4:3 preview above them.
 
-Window motion is preserved from commit `1ff0969`: the shared window controller,
-chrome, spring, tilt, and parallax are unchanged. Customization keeps its form and
+Window motion follows commit `1ff0969`, with a hold-at-current-angle interaction
+for hovered slots. Customization keeps its form and
 layout containers in the shared 3D context. Read-only artwork and text use depth;
 native controls stay at zero depth. Only each reel clips its own contents.
+The fish preview floats at 40px depth, above the frame; headings, shape names,
+and read-only window text use independent depths. Window width and reel height
+adapt to viewport height, and the preview retains its 4:3 frame.
 Reduced motion disables reel settling and release feedback while retaining the
 original pointer-driven window behavior. Run `pnpm test` and `pnpm build` to check
 customization, persistence, and window-motion regressions.

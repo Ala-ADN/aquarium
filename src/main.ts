@@ -24,6 +24,7 @@ import {
   MAX_RENDER_PIXEL_RATIO,
 } from "./constants";
 import { mountFihCreator } from "./ui/fih-creator";
+import { createFihLivePreview } from "./ui/fih-live-preview";
 import { addDebugControls } from "./ui/debug";
 import { createWaterEnvironment, withWaterColor } from "./water/WaterEnvironment";
 import type { FihDesign } from "./types";
@@ -108,9 +109,6 @@ function displayFih(design: FihDesign) {
   }
 }
 
-mountFihCreator(displayFih);
-restoringVisit = false;
-
 // orbit controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
@@ -132,6 +130,12 @@ const effectController = {
   cohesion: Number(FIH_FLOCKING.cohesion),
   paused: false,
 };
+
+mountFihCreator(displayFih, (preview, appearance) => createFihLivePreview(preview, appearance, {
+  water: water.uniforms,
+  isPaused: () => effectController.paused,
+}));
+restoringVisit = false;
 
 function setDebugMode(paused: boolean) {
   effectController.paused = paused;
@@ -227,7 +231,7 @@ document.addEventListener("keydown", (event) => {
   const target = event.target;
   if (
     target instanceof HTMLElement &&
-    (target.closest("input, button, textarea, select, a, [role='button']") ||
+    (target.closest("input, button, textarea, select, a, [role='button'], [role='spinbutton']") ||
       target.isContentEditable)
   )
     return;

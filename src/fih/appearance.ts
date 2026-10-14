@@ -47,7 +47,8 @@ export function describeFih(appearance: FihAppearance) {
 }
 export function randomizeFih(current: FihAppearance, random = Math.random): FihAppearance {
   const choose = <T>(items: readonly T[]) => items[Math.min(items.length - 1, Math.floor(random() * items.length))];
-  const size = () => Math.round((.8 + random() * .4) * 20) / 20;
+  const sizeSteps = Math.round((MAX_PART_SIZE - MIN_PART_SIZE) / .05);
+  const size = () => Math.round((MIN_PART_SIZE + Math.round(random() * sizeSteps) * .05) * 100) / 100;
   const candidate: FihAppearance = {
     shape: choose(FIH_PRESETS).id, finShape: choose(FIN_SHAPES).id, headShape: choose(HEAD_SHAPES).id,
     color: choose(FIH_PALETTE).hex, finColor: choose(FIH_PALETTE).hex, headColor: choose(FIH_PALETTE).hex,
@@ -61,13 +62,10 @@ export function randomizeFih(current: FihAppearance, random = Math.random): FihA
 }
 export class FihDraft {
   appearance: FihAppearance;
-  private previous: FihAppearance | null = null;
   constructor(appearance = DEFAULT_APPEARANCE) {
     const { shape, finShape, headShape, color, finColor, headColor, finSize, bodySize, headSize } = appearance;
     this.appearance = { shape, finShape, headShape, color, finColor, headColor, finSize, bodySize, headSize, pattern: "plain" };
   }
-  get canUndo() { return this.previous !== null; }
-  change(change: Partial<FihAppearance>) { this.appearance = { ...this.appearance, ...change, pattern: "plain" }; this.previous = null; }
-  surprise(random = Math.random) { this.previous = { ...this.appearance }; this.appearance = randomizeFih(this.appearance, random); }
-  undo() { if (this.previous) this.appearance = this.previous; this.previous = null; }
+  change(change: Partial<FihAppearance>) { this.appearance = { ...this.appearance, ...change, pattern: "plain" }; }
+  surprise(random = Math.random) { this.appearance = randomizeFih(this.appearance, random); }
 }
