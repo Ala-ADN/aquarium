@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { mountFihCreator } from "../src/ui/fih-creator";
 import { VISIT_STORAGE_KEY, PREVIOUS_STORAGE_KEY, LEGACY_STORAGE_KEY } from "../src/fih/visit";
 import { DEFAULT_APPEARANCE, FIH_PALETTE } from "../src/fih/appearance";
+import { drawFihPreview } from "../src/ui/fih-preview";
 
 vi.mock("../src/ui/fih-preview", () => ({ drawFihPreview: vi.fn() }));
 let creator: ReturnType<typeof mountFihCreator>;
@@ -34,9 +35,12 @@ const submit = () =>
     new Event("submit", { bubbles: true, cancelable: true })
   );
 beforeEach(() => {
-  vi.useFakeTimers({ toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout", "performance", "Date"] });
+  vi.useFakeTimers({
+    toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout", "performance", "Date"],
+  });
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) =>
-    setTimeout(() => callback(performance.now()), 16));
+    setTimeout(() => callback(performance.now()), 16)
+  );
   vi.stubGlobal("cancelAnimationFrame", (id: number) => clearTimeout(id));
   document.body.innerHTML = '<footer id="fih-footer"></footer>';
   localStorage.clear();
@@ -117,31 +121,63 @@ describe("three-lane creator", () => {
     ).toBeNull();
     expect(document.querySelectorAll('.fih-lane input[type="color"]')).toHaveLength(3);
     expect(document.querySelectorAll('.fih-lane input[type="range"]')).toHaveLength(3);
+    const machine = find(".fih-machine");
+    expect(machine.querySelectorAll(".fih-lane")).toHaveLength(3);
+    expect(machine.querySelector(".fih-spin")).not.toBeNull();
+    expect(document.querySelector(".fih-machine-heading")).toBeNull();
     for (const part of ["fin", "body", "head"]) {
       expect(find(`#fih-${part}-picker`).getAttribute("aria-label")).toBe(`Custom ${part} color`);
       expect(find(`#fih-${part}-size`).getAttribute("aria-label")).toBe(`${part} size`);
     }
   });
-  it("shows earned progress with a time-spent hover message that continues after the bar fills", () => {
+  it("releases and saves immediately while playing swim-out feedback, then resets it on edits", () => {
+    const display = vi.fn();
+    creator = mountFihCreator(display);
+    const cancel = vi.fn();
+    const animated = { finished: new Promise(() => {}), cancel };
+    const animate = vi.fn(() => animated);
+    Object.defineProperty(find(".fih-preview canvas"), "animate", { value: animate });
+    Object.defineProperty(find(".fih-release-ripple"), "animate", { value: animate });
+    vi.advanceTimersByTime(10_000);
+    reel("body").focus();
+    submit();
+    expect(display).toHaveBeenCalledOnce();
+    expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih.count).toBe(1);
+    expect(animate).toHaveBeenCalledTimes(2);
+    expect(find(".fih-preview").hasAttribute("data-releasing")).toBe(true);
+    inputValue("#fih-head-size", "1.25");
+    expect(find(".fih-preview").hasAttribute("data-releasing")).toBe(false);
+    expect(cancel).toHaveBeenCalledTimes(2);
+  });
+  it("shows the time-spent message beside the progress bar and keeps it updated after the bar fills", () => {
     creator = mountFihCreator(vi.fn());
     const progress = find("#fih-count");
     const fill = find("#fih-count > div");
+    const text = find(".fih-progress-text");
+    const message = find(".fih-progress-message");
+    expect(find(".fih-progress-reward").textContent).toBe("you get to add 10 fih");
+    expect(text.querySelector("canvas")).not.toBeNull();
+    expect(text.parentElement).toBe(progress.parentElement);
+    expect(progress.contains(text)).toBe(false);
     expect(progress.getAttribute("role")).toBe("progressbar");
     expect(progress.getAttribute("aria-valuemax")).toBe("10");
-    expect(progress.textContent).toBe("");
+    expect(message.textContent).toBe("you spent 0 seconds here, thanks,");
+    expect(progress.hasAttribute("title")).toBe(false);
     expect(fill.style.width).toBe("0%");
     vi.advanceTimersByTime(15_000);
-    progress.dispatchEvent(new PointerEvent("pointerenter"));
-    expect(progress.title).toBe("you spent 15 seconds here, thanks");
-    expect(progress.getAttribute("aria-valuetext")).toBe("1 of 10 fih earned");
+    expect(message.textContent).toBe("you spent 15 seconds here, thanks,");
+    expect(progress.getAttribute("aria-valuetext")).toBe(
+      "1 of 10 fih earned. you spent 15 seconds here, thanks, you get to add 10 fih."
+    );
     expect(fill.style.width).toBe("15%");
     vi.advanceTimersByTime(110_000);
     expect(fill.style.width).toBe("100%");
     expect(progress.getAttribute("aria-valuenow")).toBe("10");
-    expect(progress.title).toBe("you spent 125 seconds here, thanks");
+    expect(message.textContent).toBe("you spent 125 seconds here, thanks,");
+    expect(progress.hasAttribute("title")).toBe(false);
     creator.destroy();
     creator = mountFihCreator(vi.fn());
-    expect(find("#fih-count").title).toBe("you spent 125 seconds here, thanks");
+    expect(find(".fih-progress-message").textContent).toBe("you spent 125 seconds here, thanks,");
   });
   it("wraps individual reels without changing the other columns", () => {
     creator = mountFihCreator(vi.fn());
@@ -186,7 +222,9 @@ describe("three-lane creator", () => {
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
     expect(find("form").getAttribute("aria-busy")).toBe("true");
     vi.advanceTimersByTime(240);
-    expect(parseFloat(find('[data-part="fin"]').style.getPropertyValue("--window-depth"))).toBeGreaterThan(0);
+    expect(
+      parseFloat(find('[data-part="fin"]').style.getPropertyValue("--window-depth"))
+    ).toBeGreaterThan(0);
     expect(find('[data-part="fin"]').style.getPropertyValue("--fih-reel-offset")).not.toBe("0");
     expect(display).not.toHaveBeenCalled();
     expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih).toBeNull();
@@ -229,8 +267,14 @@ describe("three-lane creator", () => {
     vi.advanceTimersByTime(200);
     submit();
     expect(display).toHaveBeenCalledTimes(1);
-    expect(display.mock.lastCall?.[0]).toMatchObject({ finSize: .6, bodySize: .6, headSize: .6,
-      color: FIH_PALETTE[0].hex, finColor: FIH_PALETTE[0].hex, headColor: FIH_PALETTE[0].hex });
+    expect(display.mock.lastCall?.[0]).toMatchObject({
+      finSize: 0.6,
+      bodySize: 0.6,
+      headSize: 0.6,
+      color: FIH_PALETTE[0].hex,
+      finColor: FIH_PALETTE[0].hex,
+      headColor: FIH_PALETTE[0].hex,
+    });
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(0);
   });
   it("finishes a spin when the tab is hidden without leaving background animation frames", () => {
@@ -459,6 +503,76 @@ describe("three-lane creator", () => {
     expect(shape("body")).toBe("round");
     expect(slot.hasAttribute("data-hovered")).toBe(true);
   });
+  it("prioritizes spin and update clicks through the window plane without duplicate actions", () => {
+    const display = vi.fn();
+    creator = mountFihCreator(display);
+    const plane = find(".glass-window__surface");
+    const spin = find<HTMLButtonElement>(".fih-spin");
+    const release = find<HTMLButtonElement>(".fih-release");
+    const bounds = (top: number) => ({
+      left: 500,
+      right: 600,
+      top,
+      bottom: top + 34,
+      x: 500,
+      y: top,
+      width: 100,
+      height: 34,
+      toJSON() {},
+    });
+    vi.spyOn(spin, "getBoundingClientRect").mockReturnValue(bounds(100));
+    vi.spyOn(release, "getBoundingClientRect").mockReturnValue(bounds(200));
+    const hit = (y: number) => {
+      plane.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          clientX: 550,
+          clientY: y,
+          pointerId: 1,
+          isPrimary: true,
+          button: 0,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      plane.dispatchEvent(
+        new PointerEvent("pointerup", {
+          clientX: 550,
+          clientY: y,
+          pointerId: 1,
+          isPrimary: true,
+          button: 0,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      plane.dispatchEvent(
+        new MouseEvent("click", {
+          clientX: 550,
+          clientY: y,
+          button: 0,
+          detail: 1,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    };
+    hit(117);
+    expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
+    vi.advanceTimersByTime(10_000);
+    reel("body").focus();
+    expect(release.disabled).toBe(false);
+    // Keep the native submit hook, bypassing happy-dom's decimal range validation.
+    const requestSubmit = vi
+      .spyOn(find<HTMLFormElement>("form"), "requestSubmit")
+      .mockImplementation(() => {
+        submit();
+      });
+    hit(217);
+    expect(requestSubmit).toHaveBeenCalledOnce();
+    expect(display).toHaveBeenCalledOnce();
+    expect(release.textContent).toBe("update");
+    expect(display.mock.lastCall?.[0].count).toBe(1);
+  });
   it("updates and disposes the live preview with the draft", () => {
     const live = { update: vi.fn(), resize: vi.fn(), destroy: vi.fn() };
     const createPreview = vi.fn(() => live);
@@ -466,6 +580,10 @@ describe("three-lane creator", () => {
     expect(createPreview).toHaveBeenCalledWith(find(".fih-preview canvas"), DEFAULT_APPEARANCE);
     inputValue("#fih-head-size", "1.5");
     expect(live.update).toHaveBeenLastCalledWith({ ...DEFAULT_APPEARANCE, headSize: 1.5 });
+    expect(drawFihPreview).toHaveBeenCalledWith(find(".fih-progress-fih"), {
+      ...DEFAULT_APPEARANCE,
+      headSize: 1.5,
+    });
     creator.destroy();
     expect(live.destroy).toHaveBeenCalledTimes(1);
   });

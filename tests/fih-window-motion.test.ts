@@ -77,7 +77,7 @@ describe("customization preserves the original window motion", () => {
     expect(value("parallax-y")).toBe(-12);
   });
 
-  it("holds tilt steady over slots and resumes after leaving them", () => {
+  it("keeps tilting while hovering and editing the slot controls", () => {
     point(window, 880, 100);
     const shape = panel.querySelector<HTMLElement>('[data-part="body"] .fih-reel')!;
     shape.dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true }));
@@ -88,7 +88,7 @@ describe("customization preserves the original window motion", () => {
     size.value = "1.5";
     size.dispatchEvent(new Event("input", { bubbles: true }));
     point(size, 120, 580);
-    expect(value("ry")).toBe(6);
+    expect(value("ry")).toBe(-6);
     expect(size.value).toBe("1.5");
     const spin = panel.querySelector<HTMLButtonElement>(".fih-spin")!;
     spin.click();
@@ -99,13 +99,13 @@ describe("customization preserves the original window motion", () => {
     color.value = "#123456";
     color.dispatchEvent(new Event("input", { bubbles: true }));
     point(color, 120, 580);
-    expect(value("parallax-x")).toBe(-12);
+    expect(value("parallax-x")).toBe(12);
     point(window, 120, 580);
     expect(value("ry")).toBe(-6);
     expect(value("parallax-x")).toBe(12);
   });
 
-  it("freezes an in-flight spring at its rendered angle when a slot is entered", () => {
+  it("keeps an in-flight spring responding when the pointer enters a slot", () => {
     window.dispatchEvent(new PointerEvent("pointermove", {
       clientX: 880, clientY: 100, pointerType: "mouse", bubbles: true,
     }));
@@ -118,9 +118,11 @@ describe("customization preserves the original window motion", () => {
     expect(angle).toBeLessThan(6);
     const reel = panel.querySelector<HTMLElement>(".fih-reel")!;
     point(reel, 120, 580);
-    expect(value("ry")).toBe(angle);
+    expect(value("ry")).toBe(-6);
+    expect(value("rx")).toBe(-6);
     point(reel, 880, 100);
-    expect(value("ry")).toBe(angle);
+    expect(value("ry")).toBe(6);
+    expect(value("rx")).toBe(6);
   });
 
   it("retains title-bar dragging and keyboard reset", () => {

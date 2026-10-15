@@ -13,6 +13,8 @@ import { advanceVisit, earnedFih, readVisit, saveVisit } from "../fih/visit";
 import { drawFihPreview } from "./fih-preview";
 import { createWindow } from "./window";
 import { sampleFihSpin } from "./fih-spin";
+import { createFihReleaseFeedback } from "./fih-release";
+import { prioritizeControlClicks } from "./control-pointer-priority";
 import type { FihPreviewFactory } from "./fih-live-preview";
 
 function shapeChange(part: FihPart, shape: string): Partial<FihAppearance> {
@@ -63,20 +65,43 @@ export function mountFihCreator(
   const form = document.createElement("form");
   form.className = "fih-form";
   form.innerHTML = `
-    <div class="fih-editor"><div class="fih-preview"><canvas role="img" aria-label="Preview of your fih"></canvas></div>
-    <div class="fih-lanes">${FIH_PARTS.map(lane).join("")}</div></div>
-    <div class="fih-machine-heading"><div></div><button type="button" class="fih-spin">spin all</button></div>
+    <div class="fih-editor"><div class="fih-preview"><canvas role="img" aria-label="Preview of your fih"></canvas><span class="fih-release-ripple" aria-hidden="true"></span></div>
+    <div class="fih-machine" role="group" aria-label="Fish controls"><div class="fih-lanes">${FIH_PARTS.map(lane).join("")}</div><button type="button" class="fih-spin">spin all</button></div></div>
     <p class="fih-spin-status visually-hidden" role="status" aria-live="polite"></p>
-    <div class="fih-release-row"><div id="fih-count" role="progressbar" tabindex="0" aria-label="Fih earned" aria-valuemin="0" aria-valuemax="${MAX_VISITOR_FIH}" aria-valuenow="0"><div style="width: 0%"></div></div><button class="fih-release" type="submit" disabled>release</button></div>`;
+    <div class="fih-release-row"><div id="fih-count" role="progressbar" tabindex="0" aria-label="Fih earned" aria-valuemin="0" aria-valuemax="${MAX_VISITOR_FIH}" aria-valuenow="0"><div style="width: 0%"></div></div><span class="fih-progress-text" aria-hidden="true"><span class="fih-progress-message"></span> <span class="fih-progress-reward">you get to add ${MAX_VISITOR_FIH} <canvas class="fih-progress-fih" width="32" height="18">fih</canvas></span></span><button class="fih-release" type="submit" disabled>release</button></div>`;
   const fihWindow = createWindow("make a fih", form);
   fihWindow.element.classList.add("fih-window");
   fihWindow.element.id = "fih-creator";
   app.replaceChildren(fihWindow.element);
   const find = <T extends HTMLElement>(selector: string) => form.querySelector<T>(selector)!;
   const preview = find<HTMLCanvasElement>(".fih-preview canvas");
+  const previewFrame = preview.parentElement!;
+  const cutoutSurfaces = [".glass-window__surface", ".glass-window__body"].map(
+    (selector) => fihWindow.element.querySelector<HTMLElement>(selector)!
+  );
+  function updatePreviewCutout() {
+    for (const surface of cutoutSurfaces) {
+      let x = 0;
+      let y = 0;
+      let element: HTMLElement | null = previewFrame;
+      // Layout offsets stay in the window's plane while it tilts or is dragged.
+      while (element && element !== surface) {
+        x += element.offsetLeft;
+        y += element.offsetTop;
+        element = element.offsetParent as HTMLElement | null;
+      }
+      surface.style.setProperty("--fih-hole-x", `${x}px`);
+      surface.style.setProperty("--fih-hole-y", `${y}px`);
+      surface.style.setProperty("--fih-hole-width", `${previewFrame.offsetWidth}px`);
+      surface.style.setProperty("--fih-hole-height", `${previewFrame.offsetHeight}px`);
+    }
+  }
   const livePreview = createPreview?.(preview, draft.appearance);
+  const releaseFeedback = createFihReleaseFeedback(preview, find(".fih-release-ripple"));
   const count = find<HTMLDivElement>("#fih-count");
   const progressFill = find<HTMLDivElement>("#fih-count > div");
+  const progressMessage = find<HTMLSpanElement>(".fih-progress-message");
+  const miniature = find<HTMLCanvasElement>(".fih-progress-fih");
   const release = find<HTMLButtonElement>(".fih-release");
   const spinStatus = find<HTMLParagraphElement>(".fih-spin-status");
   const animations = new Set<Animation>();
@@ -90,7 +115,6 @@ export function mountFihCreator(
     if (hoveredSlot) delete hoveredSlot.dataset.hovered;
     hoveredSlot = slot;
     if (slot) slot.dataset.hovered = "";
-    fihWindow.setTiltPaused(slot !== null);
   }
   function slotAtPointer(event: MouseEvent) {
     const target =
@@ -131,10 +155,14 @@ export function mountFihCreator(
     count.dataset.earned = String(earned);
     const progress = Math.min(elapsed / FIH_INTERVAL_MS, MAX_VISITOR_FIH);
     count.setAttribute("aria-valuenow", String(progress));
-    count.setAttribute("aria-valuetext", `${earned} of ${MAX_VISITOR_FIH} fih earned`);
     progressFill.style.width = `${(progress / MAX_VISITOR_FIH) * 100}%`;
     const seconds = Math.floor(elapsed / 1000);
-    count.title = `you spent ${seconds} ${seconds === 1 ? "second" : "seconds"} here, thanks`;
+    const message = `you spent ${seconds} ${seconds === 1 ? "second" : "seconds"} here, thanks`;
+    progressMessage.textContent = `${message},`;
+    count.setAttribute(
+      "aria-valuetext",
+      `${earned} of ${MAX_VISITOR_FIH} fih earned. ${message}, you get to add ${MAX_VISITOR_FIH} fih.`
+    );
     release.disabled = !reachedFooter || earned === 0;
     if (earned !== previous) persist();
   }
@@ -159,9 +187,22 @@ export function mountFihCreator(
     // Settle the reels without delaying editing or release.
     const animation = element.animate(
       [
-        { transform: "translateY(calc(var(--fih-reel-height) * -.4 - 22px))", filter: "blur(3px)", opacity: 0.4 },
-        { transform: "translateY(calc(var(--fih-reel-height) * -.4 + 7px))", filter: "blur(0px)", opacity: 1, offset: 0.8 },
-        { transform: "translateY(calc(var(--fih-reel-height) * -.4))", filter: "blur(0px)", opacity: 1 },
+        {
+          transform: "translateY(calc(var(--fih-reel-height) * -.4 - 22px))",
+          filter: "blur(3px)",
+          opacity: 0.4,
+        },
+        {
+          transform: "translateY(calc(var(--fih-reel-height) * -.4 + 7px))",
+          filter: "blur(0px)",
+          opacity: 1,
+          offset: 0.8,
+        },
+        {
+          transform: "translateY(calc(var(--fih-reel-height) * -.4))",
+          filter: "blur(0px)",
+          opacity: 1,
+        },
       ],
       { duration, easing: "ease-out" }
     );
@@ -188,6 +229,7 @@ export function mountFihCreator(
     if (destroyed) return;
     if (livePreview) livePreview.update(draft.appearance);
     else drawFihPreview(preview, draft.appearance);
+    drawFihPreview(miniature, draft.appearance);
     const { fin, body, head } = resolveFihColors(draft.appearance);
     preview.setAttribute(
       "aria-label",
@@ -196,6 +238,7 @@ export function mountFihCreator(
     drawReels();
   }
   function syncForm() {
+    releaseFeedback.cancel();
     const colors = resolveFihColors(draft.appearance);
     for (const part of FIH_PARTS) {
       const choices = partOptions(part);
@@ -347,6 +390,7 @@ export function mountFihCreator(
       options
     );
   }
+  prioritizeControlClicks(form, events.signal);
   window.addEventListener(
     "pointermove",
     (event) => {
@@ -400,6 +444,7 @@ export function mountFihCreator(
         pattern: "plain",
       };
       onDisplay(design);
+      releaseFeedback.play();
       released = design;
       persist();
       release.textContent = "update";
@@ -408,12 +453,14 @@ export function mountFihCreator(
   );
   syncForm();
   updateAllowance();
+  updatePreviewCutout();
   if (released) {
     release.textContent = "update";
     onDisplay(released);
   }
   persist();
   const resizeObserver = new ResizeObserver(() => {
+    updatePreviewCutout();
     livePreview?.resize();
     if (!spinTarget) updatePreview();
   });
@@ -427,7 +474,10 @@ export function mountFihCreator(
     () => {
       tick();
       updateAllowance();
-      if (document.hidden) stopSpin();
+      if (document.hidden) {
+        stopSpin();
+        releaseFeedback.cancel();
+      }
       persist();
     },
     options
@@ -437,6 +487,7 @@ export function mountFihCreator(
     () => {
       tick();
       stopSpin();
+      releaseFeedback.cancel();
       persist();
     },
     options
@@ -447,6 +498,7 @@ export function mountFihCreator(
       persist();
       destroyed = true;
       stopSpin(false);
+      releaseFeedback.cancel();
       clearInterval(interval);
       events.abort();
       for (const animation of animations) animation.cancel();

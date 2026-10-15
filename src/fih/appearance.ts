@@ -4,11 +4,18 @@ import type { FihAppearance, FihPart, FihTemplate } from "../types";
 import { FIH_PRESETS, getFihPreset } from "./presets";
 import { FIN_SHAPES, HEAD_SHAPES, MIN_PART_SIZE, MAX_PART_SIZE } from "./parts";
 
+// MS Paint palette, in the supplied order.
 export const FIH_PALETTE = [
-  { name: "peach", hex: "#ff9955" }, { name: "gold", hex: "#ffd166" },
-  { name: "mint", hex: "#7bdcb5" }, { name: "sky", hex: "#70c7ff" },
-  { name: "lavender", hex: "#b69cff" }, { name: "pink", hex: "#ff8fbd" },
-  { name: "pearl", hex: "#f5f1de" }, { name: "blue", hex: "#4779d6" },
+  { name: "black", hex: "#000000" }, { name: "white", hex: "#ffffff" },
+  { name: "gray", hex: "#7f7f7f" }, { name: "light gray", hex: "#c3c3c3" },
+  { name: "dark red", hex: "#880015" }, { name: "brown", hex: "#b97a57" },
+  { name: "red", hex: "#ed1c24" }, { name: "pink", hex: "#ffaec9" },
+  { name: "orange", hex: "#ff7f27" }, { name: "gold", hex: "#ffc90e" },
+  { name: "yellow", hex: "#fff200" }, { name: "cream", hex: "#efe4b0" },
+  { name: "green", hex: "#22b14c" }, { name: "lime", hex: "#b5e61d" },
+  { name: "turquoise", hex: "#00a2e8" }, { name: "light turquoise", hex: "#99d9ea" },
+  { name: "indigo", hex: "#3f48cc" }, { name: "blue gray", hex: "#7092be" },
+  { name: "purple", hex: "#a349a4" }, { name: "lavender", hex: "#c8bfe7" },
 ] as const;
 export const DEFAULT_APPEARANCE: FihAppearance = {
   shape: "classic", finShape: "triangle", headShape: "pointed",

@@ -7,24 +7,31 @@ and project windows. Visitors earn one fih every 10 seconds with the page visibl
 capped at 10. Reaching the footer lets them release their full earned swarm.
 
 The creator places a **4:3 preview on the left** and three narrow **fin**, **body**,
-and **head** slots on the right. Scroll over a slot to cycle its shape; small
-trackpad movements accumulate. Hovering any part of a slot holds the window's
-current tilt steady; wheel events take priority over page scrolling, including
-when a 3D hit lands on the window behind the slot. Leaving resumes tilt. The arrow
+and **head** slots in one recessed control panel on the right. The full-width
+**spin all** button sits below the reels, with wide color swatches in each lane.
+The progress bar and release button share a compact footer row. Scroll over a
+slot to cycle its shape; small trackpad movements accumulate. The window keeps
+tilting while hovering or editing the slots. Wheel events take priority over page
+scrolling, including when a 3D hit lands on the window behind the slot. Clicks
+also prioritize the visible buttons and color pickers and stay attached to the
+pressed control if the window moves before release. Window tilt keeps running. The arrow
 buttons and Up/Down/Home/End keys offer the same selection. Each part has a custom
 color picker and a 60–150% size slider. Part headings, shape names, color/size
 labels, percentage readouts, preview captions, and the fish description are
 omitted visually; accessible control names remain. There are no shape/color dropdowns, special
 effects panel, or undo action. **Spin all** randomizes shapes, sizes across the
-full slider range, and colors from the built-in palette. Reels scroll continuously
+full slider range, and colors from the supplied 20-color MS Paint palette. Reels scroll continuously
 while the slots rise from the window in 3D at a fixed layout height; colors cycle through the palette
 and sliders sweep from minimum to maximum, wrapping back to minimum. Columns
 slow down and land in fin/body/head order, half a second apart. Manual editing or
 release settles the spin first; clicking spin again restarts it. Release applies
-the design to the full earned swarm; unreleased edits are not saved.
+the design to the full earned swarm immediately and plays a swim-out animation
+with a ripple at the preview opening. The preview returns ready for editing; edits
+or another spin cancel the effect. Unreleased edits are not saved.
 
-The count is shown as a 7.css progress bar. Hovering it shows “you spent X
-seconds here, thanks”. Visible visit time keeps counting after all 10 fih are
+The count is shown as a 7.css progress bar with “you spent X seconds here,
+thanks, you get to add10” and a miniature of the current fish displayed beside it.
+The miniature follows shape, color, and size edits. Visible visit time keeps counting after all 10 fih are
 earned, while the bar stays full.
 
 The body slot offers classic, chubby, diamond, and sailfin shapes; the
@@ -36,6 +43,9 @@ share two seam points controlled by body size. Head size scales the remaining
 head points around the seam center without moving the shared connection. Colors
 remain distinct at the join, with no blending or added outline. The canvas
 fallback fills a solid body/head silhouette to prevent antialiasing gaps.
+The preview is a transparent opening through the window, showing the live
+aquarium behind the fish. Only decorative background layers are cut out; the
+form and slot depth effects retain their shared 3D context.
 The preview uses the aquarium's swimming shader and lighting, without triangle
 outlines at the head/body join. Its camera magnification and center stay fixed:
 the size sliders change the visible fish size, never a fit-to-frame scale. A
@@ -48,8 +58,8 @@ saves migrate without deleting the original data. Storage errors still permit
 release during the current visit. All controls support the keyboard, and the
 three part columns remain side by side on mobile, with the 4:3 preview above them.
 
-Window motion follows commit `1ff0969`, with a hold-at-current-angle interaction
-for hovered slots. Customization keeps its form and
+Window motion follows commit `1ff0969` and remains active over the slot controls.
+Customization keeps its form and
 layout containers in the shared 3D context. Read-only artwork and text use depth;
 native controls stay at zero depth. Only each reel clips its own contents.
 The fish preview floats at 40px depth, above the frame; read-only window text
@@ -100,8 +110,12 @@ tilting ease toward their targets with a spring. Adjust `WINDOW_MOTION` in
 Set `--window-depth` on any element inside a window to choose its height:
 
 ```css
-.fih-preview canvas { --window-depth: 24px; }
-.fih-status { --window-depth: 8px; }
+.fih-preview canvas {
+  --window-depth: 24px;
+}
+.fih-status {
+  --window-depth: 8px;
+}
 ```
 
 Or use `style="--window-depth: 40px"` on an individual element. Depth defaults to
