@@ -11,7 +11,7 @@ export const FIN_SHAPES: readonly { id: FihFinShape; label: string; outline: rea
 ];
 export const HEAD_SHAPES: readonly { id: FihHeadShape; label: string }[] = [
   { id: "pointed", label: "pointed" }, { id: "round", label: "rounded" },
-  { id: "blunt", label: "blunt" }, { id: "beak", label: "beak" },
+  { id: "blunt", label: "blunt" },
 ];
 export const FIH_PARTS: readonly FihPart[] = ["fin", "body", "head"];
 export const MIN_PART_SIZE = .6;
@@ -64,9 +64,7 @@ export function createFihParts(template: Partial<FihTemplate>): FihTriangle[] {
     ? [upperVertex, [neck + headLength * .35, top], [neck + headLength * .8, mid + (top - mid) * .7], [neck + headLength, mid], [neck + headLength * .8, mid + (bottom - mid) * .7], [neck + headLength * .35, bottom], lowerVertex]
     : headShape === "blunt"
       ? [upperVertex, [neck + headLength, mid + headHeight * .85], [neck + headLength, mid - headHeight * .85], lowerVertex]
-      : headShape === "beak"
-        ? [upperVertex, [neck + headLength * .5, mid + headHeight * .5], [neck + headLength, mid], [neck + headLength * .5, mid - headHeight * .5], lowerVertex]
-        : [upperVertex, [neck + headLength * .25, mid + (top - mid) * .75], [neck + headLength, mid], [neck + headLength * .25, mid + (bottom - mid) * .75], lowerVertex];
+      : [upperVertex, [neck + headLength, mid], lowerVertex];
   const fin = FIN_SHAPES.find((item) => item.id === (template.finShape ?? "triangle"))!;
   return [
     ...triangulatePart(fin.outline.map(([z, y]) => [z * finSize, y * finSize]), "fin"),

@@ -12,14 +12,30 @@ trackpad movements accumulate. Hovering any part of a slot holds the window's
 current tilt steady; wheel events take priority over page scrolling, including
 when a 3D hit lands on the window behind the slot. Leaving resumes tilt. The arrow
 buttons and Up/Down/Home/End keys offer the same selection. Each part has a custom
-color picker and a 60–150% size slider. There are no shape/color dropdowns, special
+color picker and a 60–150% size slider. Part headings, shape names, color/size
+labels, percentage readouts, preview captions, and the fish description are
+omitted visually; accessible control names remain. There are no shape/color dropdowns, special
 effects panel, or undo action. **Spin all** randomizes shapes, sizes across the
-full slider range, and colors from the built-in palette. Release applies the
-design to the full earned swarm; unreleased edits are not saved.
+full slider range, and colors from the built-in palette. Reels scroll continuously
+while the slots rise from the window in 3D at a fixed layout height; colors cycle through the palette
+and sliders sweep from minimum to maximum, wrapping back to minimum. Columns
+slow down and land in fin/body/head order, half a second apart. Manual editing or
+release settles the spin first; clicking spin again restarts it. Release applies
+the design to the full earned swarm; unreleased edits are not saved.
+
+The count is shown as a 7.css progress bar. Hovering it shows “you spent X
+seconds here, thanks”. Visible visit time keeps counting after all 10 fih are
+earned, while the bar stays full.
+
+The body slot offers classic, chubby, diamond, and sailfin shapes; the
+head slot offers pointed, rounded, and blunt shapes. Saved tiny bodies become
+classic bodies, as do saved needle bodies; saved beak heads become pointed heads.
 
 The preview and released swarm use the same connected geometry. The body and head
 share two seam points controlled by body size. Head size scales the remaining
-head points around the seam center without moving the shared connection.
+head points around the seam center without moving the shared connection. Colors
+remain distinct at the join, with no blending or added outline. The canvas
+fallback fills a solid body/head silhouette to prevent antialiasing gaps.
 The preview uses the aquarium's swimming shader and lighting, without triangle
 outlines at the head/body join. Its camera magnification and center stay fixed:
 the size sliders change the visible fish size, never a fit-to-frame scale. A
@@ -36,12 +52,12 @@ Window motion follows commit `1ff0969`, with a hold-at-current-angle interaction
 for hovered slots. Customization keeps its form and
 layout containers in the shared 3D context. Read-only artwork and text use depth;
 native controls stay at zero depth. Only each reel clips its own contents.
-The fish preview floats at 40px depth, above the frame; headings, shape names,
-and read-only window text use independent depths. Window width and reel height
+The fish preview floats at 40px depth, above the frame; read-only window text
+uses independent depths. Window width and reel height
 adapt to viewport height, and the preview retains its 4:3 frame.
-Reduced motion disables reel settling and release feedback while retaining the
-original pointer-driven window behavior. Run `pnpm test` and `pnpm build` to check
-customization, persistence, and window-motion regressions.
+Slot spins, reel changes, button transitions, and release feedback always animate.
+Run `pnpm test` and `pnpm build` to check customization, persistence, and
+window-motion regressions.
 
 Press **Space** outside form controls to toggle camera debug mode without scrolling.
 Add `?debug` to keep the simulation controls visible.

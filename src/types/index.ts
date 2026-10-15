@@ -14,9 +14,9 @@ export interface FihTemplate {
   scale: number;
 }
 
-export type FihShape = "classic" | "round" | "long" | "diamond" | "sail" | "tiny";
+export type FihShape = "classic" | "round" | "diamond" | "sail";
 export type FihFinShape = "triangle" | "fork" | "fan" | "ribbon";
-export type FihHeadShape = "pointed" | "round" | "blunt" | "beak";
+export type FihHeadShape = "pointed" | "round" | "blunt";
 export type FihPart = "fin" | "body" | "head";
 export type FihPattern = "plain" | "stripes" | "spots" | "dip";
 

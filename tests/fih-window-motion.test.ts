@@ -9,7 +9,7 @@ let panel: HTMLElement;
 let frames: Map<number, FrameRequestCallback>;
 
 function settle() {
-  for (let count = 0; frames.size && count < 120; count++) {
+  for (let count = 0; frames.size && count < 240; count++) {
     const pending = [...frames.values()];
     frames.clear();
     vi.advanceTimersByTime(16);
@@ -43,10 +43,6 @@ beforeEach(() => {
   vi.stubGlobal("innerHeight", 800);
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
-  // Reproduce the preference that disabled all motion in the later commit.
-  vi.spyOn(window, "matchMedia").mockReturnValue(
-    Object.assign(new EventTarget(), { matches: true }) as MediaQueryList,
-  );
   localStorage.clear();
   document.body.innerHTML = '<footer id="fih-footer"></footer>';
   creator = mountFihCreator(vi.fn());
@@ -68,7 +64,7 @@ afterEach(() => {
 });
 
 describe("customization preserves the original window motion", () => {
-  it("keeps pointer tilt and parallax with the original reduced-motion behavior", () => {
+  it("keeps the original pointer tilt and parallax", () => {
     point(window, 880, 100);
     expect(value("rx")).toBe(6);
     expect(value("ry")).toBe(6);
@@ -87,13 +83,13 @@ describe("customization preserves the original window motion", () => {
     shape.dispatchEvent(new WheelEvent("wheel", { deltaY: 100, bubbles: true, cancelable: true }));
     point(shape, 880, 100);
     expect(value("ry")).toBe(6);
-    expect(panel.querySelector(".fih-description")!.textContent).toContain("chubby body");
+    expect(shape.dataset.shape).toBe("round");
     const size = panel.querySelector<HTMLInputElement>("#fih-head-size")!;
     size.value = "1.5";
     size.dispatchEvent(new Event("input", { bubbles: true }));
     point(size, 120, 580);
     expect(value("ry")).toBe(6);
-    expect(panel.querySelector<HTMLOutputElement>("#fih-head-size-value")!.value).toBe("150%");
+    expect(size.value).toBe("1.5");
     const spin = panel.querySelector<HTMLButtonElement>(".fih-spin")!;
     spin.click();
     point(spin, 880, 100);

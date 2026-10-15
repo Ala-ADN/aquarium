@@ -86,11 +86,10 @@ const visitorMaterial = new ShaderMaterial({
 let visitorMesh: Mesh<FihGeometry, ShaderMaterial> | null = null;
 let releasedAt = -Infinity;
 let restoringVisit = true;
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
 function displayFih(design: FihDesign) {
   visitorMaterial.uniforms.patternMask.value = getPatternTexture("plain");
-  releasedAt = restoringVisit || reducedMotion.matches ? -Infinity : performance.now();
+  releasedAt = restoringVisit ? -Infinity : performance.now();
   const visitorGeometry = new FihGeometry(
     fihTemplate(design),
     design.count
@@ -170,7 +169,7 @@ renderer.setAnimationLoop(() => {
   let delta = (now - lastTime) / 1000;
   if (delta > 1) delta = 1; // safety cap on large deltas
   lastTime = now;
-  visitorMaterial.uniforms.releaseGlow.value = reducedMotion.matches ? 0 : Math.max(0, 1 - (now - releasedAt) / 800);
+  visitorMaterial.uniforms.releaseGlow.value = Math.max(0, 1 - (now - releasedAt) / 800);
 
   if (!effectController.paused) {
     water.update(delta);

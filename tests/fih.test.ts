@@ -107,6 +107,13 @@ describe("visitor persistence and earning", () => {
       expect(visit).toEqual({ elapsed: 25_000, fih: { ...DEFAULT_APPEARANCE, shape: "round", color: "#abcdef", count: 2 } });
     }
   });
+  it("maps removed shapes to their retained equivalents in every save version", () => {
+    for (const version of [1, 2, 3] as const) for (const shape of ["tiny", "long"]) {
+      const saved = { ...DEFAULT_APPEARANCE, shape, headShape: "beak", count: 2 };
+      expect(parseVisit(encode(saved), version)).toEqual({ elapsed: 25_000,
+        fih: { ...DEFAULT_APPEARANCE, shape: "classic", headShape: "pointed", count: 2 } });
+    }
+  });
   it("round-trips extended designs and prefers v3 without overwriting older saves", () => {
     const data = new Map([[LEGACY_STORAGE_KEY, encode({ shape: "long", color: "#123456", count: 1 })]]);
     const storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };
@@ -132,14 +139,16 @@ describe("visitor persistence and earning", () => {
   it("counts only visible time and caps the allowance at ten", () => {
     expect(advanceVisit(9000, 5000, false)).toBe(9000);
     expect(earnedFih(advanceVisit(9000, 1000, true))).toBe(1);
-    expect(advanceVisit(99_000, 60_000, true)).toBe(100_000);
+    expect(advanceVisit(99_000, 60_000, true)).toBe(159_000);
+    expect(parseVisit(encode(null, 159_000))?.elapsed).toBe(159_000);
+    expect(earnedFih(159_000)).toBe(10);
     expect(earnedFih(100_000)).toBe(10);
   });
 });
 
 
 describe("assembled parts", () => {
-  it("joins all 96 combinations at every size extreme with finite non-degenerate triangles", () => {
+  it("joins all 48 combinations at every size extreme with finite non-degenerate triangles", () => {
     for (const body of FIH_PRESETS) for (const fin of FIN_SHAPES) for (const head of HEAD_SHAPES) {
       for (const bodySize of [.6, 1, 1.5]) for (const headSize of [.6, 1, 1.5]) {
         const appearance = { ...DEFAULT_APPEARANCE, shape: body.id, finShape: fin.id, headShape: head.id,

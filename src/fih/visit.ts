@@ -11,15 +11,20 @@ export const MAX_VISIT_TIME = MAX_VISITOR_FIH * FIH_INTERVAL_MS;
 export interface FihVisit { elapsed: number; fih: FihDesign | null }
 export const earnedFih = (elapsed: number) => Math.min(MAX_VISITOR_FIH, Math.floor(elapsed / FIH_INTERVAL_MS));
 export function advanceVisit(elapsed: number, delta: number, visible: boolean) {
-  return Math.min(MAX_VISIT_TIME, elapsed + (visible ? Math.max(0, delta) : 0));
+  return elapsed + (visible ? Math.max(0, delta) : 0);
 }
 export function parseVisit(raw: string | null, version: 1 | 2 | 3 = 3): FihVisit | null {
   try {
     const saved = JSON.parse(raw ?? "null");
     if (!saved || typeof saved !== "object" || Array.isArray(saved)) return null;
     const elapsed = typeof saved.elapsed === "number" && Number.isFinite(saved.elapsed)
-      ? Math.max(0, Math.min(saved.elapsed, MAX_VISIT_TIME)) : 0;
-    const design = saved.fih ?? (version === 1 ? saved.fish : null);
+      ? Math.max(0, saved.elapsed) : 0;
+    const previousDesign = saved.fih ?? (version === 1 ? saved.fish : null);
+    // Keep saved fish usable after removing shape options.
+    const design = previousDesign && { ...previousDesign,
+      shape: ["tiny", "long"].includes(previousDesign.shape) ? "classic" : previousDesign.shape,
+      headShape: previousDesign.headShape === "beak" ? "pointed" : previousDesign.headShape,
+    };
     if (!design || !FIH_PRESETS.some((item) => item.id === design.shape) ||
         !isHexColor(design.color) || !Number.isInteger(design.count) || design.count <= 0 || earnedFih(elapsed) === 0 ||
         (version >= 2 && !(design.finColor === null || isHexColor(design.finColor))) ||

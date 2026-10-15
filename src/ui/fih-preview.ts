@@ -26,16 +26,27 @@ export function drawFihPreview(canvas: HTMLCanvasElement, appearance: FihAppeara
   const scale = Math.min(width * .78 / (part ? 12 : 20), height * .75 / (part ? 8 : 12), width * .85 / (maxZ - minZ), height * .85 / (maxY - minY));
   const centerZ = (minZ + maxZ) / 2;
   const centerY = (minY + maxY) / 2;
-  // Fill each colored part as one path. Per-triangle strokes leave an outline
-  // at the head/body join and can show internal triangulation in the preview.
-  for (const currentPart of [0, 1, 2]) {
-    if (part && currentPart !== selected) continue;
+  const colorFor = (currentPart: number) => {
     const first = indices.find((i) => parts.getX(i) === currentPart);
-    if (first === undefined) continue;
-    context.fillStyle = new Color(colors.getX(first), colors.getY(first), colors.getZ(first)).getStyle();
+    return first === undefined ? undefined
+      : new Color(colors.getX(first), colors.getY(first), colors.getZ(first)).getStyle();
+  };
+  const finColor = colorFor(0);
+  const bodyColor = colorFor(1);
+  const headColor = colorFor(2);
+  // Fill the connected body and head together so canvas antialiasing cannot
+  // leave a hairline gap along their shared edge. A custom head color is then
+  // painted over the solid silhouette, keeping its color boundary sharp.
+  const passes = part
+    ? [{ parts: [selected], color: colorFor(selected) }]
+    : [{ parts: [0], color: finColor }, { parts: [1, 2], color: bodyColor },
+      ...(headColor !== bodyColor ? [{ parts: [2], color: headColor }] : [])];
+  for (const pass of passes) {
+    if (pass.color === undefined) continue;
+    context.fillStyle = pass.color;
     context.beginPath();
     for (let i = 0; i < vertices.count; i += 3) {
-      if (parts.getX(i) !== currentPart) continue;
+      if (!pass.parts.includes(parts.getX(i))) continue;
       for (let j = 0; j < 3; j++) {
         const x = width / 2 + (vertices.getZ(i + j) - centerZ) * scale;
         const y = height / 2 - (vertices.getY(i + j) - centerY) * scale;
