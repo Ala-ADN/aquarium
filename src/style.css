@@ -105,6 +105,9 @@ button:disabled, input:disabled { cursor: default; }
 .fih-progress-reward { display: inline-flex; align-items: center; gap: 3px; vertical-align: middle; white-space: nowrap; }
 .fih-progress-fih { display: inline-block; width: 32px; height: 18px; }
 .fih-release-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto) auto; align-items: center; gap: 12px; padding-top: 2px; }
+.fih-save-row { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.fih-save-row[hidden], .fih-save-retry[hidden] { display: none; }
+.fih-save-status { margin: 0; font-size: 11px; }
 .fih-window.win7 .fih-release { min-width: 86px; }
 .fih-window.win7 button:focus-visible, .fih-window.win7 input:focus-visible, .fih-window.win7 .fih-reel:focus-visible, .fih-window.win7 #fih-count:focus-visible { outline: 2px solid #124d79; outline-offset: 2px; }
 

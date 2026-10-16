@@ -1,5 +1,6 @@
 export const WIDTH = 32;
-export const MAX_FIH = WIDTH * WIDTH;
+// The simulation texture has 1024 slots; at most 1000 are visible.
+export const MAX_FIH = 1000;
 export const BOUNDS = 800;
 export const BOUNDS_HALF = BOUNDS / 2;
 export const DEFAULT_FIN_SIZE = 2;

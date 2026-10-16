@@ -8,7 +8,9 @@ import {
   ShaderMaterial,
   DoubleSide,
   AxesHelper,
+  BufferGeometry,
 } from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { FihGeometry } from "./fih/geometry/fih";
 import { fihTemplate } from "./fih/appearance";
 import { getPatternTexture } from "./fih/pattern-texture";
@@ -28,6 +30,10 @@ import { createFihLivePreview } from "./ui/fih-live-preview";
 import { addDebugControls } from "./ui/debug";
 import { createWaterEnvironment, withWaterColor } from "./water/WaterEnvironment";
 import type { FihDesign } from "./types";
+import { readFirebaseConfig } from "./fih/firebase-config";
+import { selectSharedSchool } from "./fih/shared";
+import type { SharedFih } from "./fih/shared";
+import { createSharedFihSync } from "./fih/shared-sync";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
 
@@ -75,7 +81,7 @@ fihMesh.matrixAutoUpdate = false;
 fihMesh.updateMatrix();
 scene.add(fihMesh);
 
-const visitorMaterial = new ShaderMaterial({
+const templateMaterial = () => new ShaderMaterial({
   uniforms: { ...fihUniforms, useTemplateColor: { value: true },
     patternMask: { value: getPatternTexture("plain") },
     patternColor: { value: new Color() }, releaseGlow: { value: 0 } },
@@ -83,18 +89,52 @@ const visitorMaterial = new ShaderMaterial({
   fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
 });
+const visitorMaterial = templateMaterial();
+const sharedMaterial = templateMaterial();
+const sharedMesh = new Mesh(new BufferGeometry(), sharedMaterial);
+sharedMesh.visible = false;
+sharedMesh.frustumCulled = false;
+sharedMesh.rotation.y = Math.PI / 2;
+sharedMesh.matrixAutoUpdate = false;
+sharedMesh.updateMatrix();
+scene.add(sharedMesh);
 let visitorMesh: Mesh<FihGeometry, ShaderMaterial> | null = null;
 let releasedAt = -Infinity;
 let restoringVisit = true;
+let ownDesign: FihDesign | null = null;
+let ownerId: string | null = null;
+let sharedEntries: SharedFih[] = [];
+let schoolKey = "";
+let schoolFrame = 0;
+let sharing: ReturnType<typeof createSharedFihSync> | null = null;
+
+function refreshSchool() {
+  const school = selectSharedSchool(sharedEntries, ownDesign, ownerId);
+  const verticesPerFih = geometry.getAttribute("position").count / MAX_FIH;
+  geometry.setDrawRange(school.count * verticesPerFih, (MAX_FIH - school.count) * verticesPerFih);
+  const key = JSON.stringify(school.placements);
+  if (key === schoolKey) return;
+  schoolKey = key;
+  const pieces = school.placements.map(({ design, offset }) => new FihGeometry(fihTemplate(design), design.count, offset));
+  const merged = pieces.length ? mergeGeometries(pieces) : null;
+  pieces.forEach((piece) => piece.dispose());
+  sharedMesh.geometry.dispose();
+  sharedMesh.geometry = merged ?? new BufferGeometry();
+  sharedMesh.visible = merged !== null;
+}
+function scheduleSchool() {
+  if (schoolFrame) return;
+  schoolFrame = requestAnimationFrame(() => { schoolFrame = 0; refreshSchool(); });
+}
 
 function displayFih(design: FihDesign) {
+  ownDesign = design;
   visitorMaterial.uniforms.patternMask.value = getPatternTexture("plain");
   releasedAt = restoringVisit ? -Infinity : performance.now();
   const visitorGeometry = new FihGeometry(
     fihTemplate(design),
     design.count
   );
-  geometry.setDrawRange(design.count * 9, (MAX_FIH - design.count) * 9);
   if (visitorMesh) {
     visitorMesh.geometry.dispose();
     visitorMesh.geometry = visitorGeometry;
@@ -106,6 +146,7 @@ function displayFih(design: FihDesign) {
     visitorMesh.frustumCulled = false;
     scene.add(visitorMesh);
   }
+  refreshSchool();
 }
 
 // orbit controls
@@ -130,11 +171,56 @@ const effectController = {
   paused: false,
 };
 
-mountFihCreator(displayFih, (preview, appearance) => createFihLivePreview(preview, appearance, {
+const creator = mountFihCreator(displayFih, (preview, appearance) => createFihLivePreview(preview, appearance, {
   water: water.uniforms,
   isPaused: () => effectController.paused,
-}));
+}), {
+  onRelease: (design) => sharing?.submit(design),
+  onRetry: () => sharing?.retry(),
+});
 restoringVisit = false;
+
+// Loading Firebase never blocks the animation or browser-only persistence.
+const firebaseConfig = readFirebaseConfig(import.meta.env, import.meta.env.DEV);
+if (firebaseConfig) {
+  type FirebaseClient = Awaited<ReturnType<typeof import("./fih/firebase")["connectFirebaseAquarium"]>>;
+  let client: FirebaseClient | null = null;
+  let connecting: Promise<FirebaseClient> | null = null;
+  let disposed = false;
+  const connect = () => {
+    if (!connecting) connecting = import("./fih/firebase").then(({ connectFirebaseAquarium }) =>
+      connectFirebaseAquarium(firebaseConfig, {
+        onEntries: (entries) => { sharedEntries = entries; scheduleSchool(); },
+        onOwner: (id) => { ownerId = id; scheduleSchool(); },
+        onError: () => creator.setSaveStatus("unavailable", false),
+        onConnected: () => sharing?.retry(),
+      })
+    ).then((connected) => {
+      client = connected;
+      if (disposed) connected.close();
+      return connected;
+    }).catch((error: unknown) => { connecting = null; throw error; });
+    return connecting;
+  };
+  let storage: Storage | null = null;
+  try { storage = localStorage; } catch { /* The current visit can still share online. */ }
+  sharing = createSharedFihSync({
+    send: async (design) => { await (await connect()).save(design); },
+    onStatus: (status) => creator.setSaveStatus(status),
+    storage,
+  });
+  const reconnect = () => sharing?.retry();
+  window.addEventListener("online", reconnect);
+  void connect().catch(() => creator.setSaveStatus("unavailable", false));
+  sharing.retry();
+  import.meta.hot?.dispose(() => {
+    disposed = true;
+    sharing?.destroy();
+    client?.close();
+    window.removeEventListener("online", reconnect);
+    cancelAnimationFrame(schoolFrame);
+  });
+}
 
 function setDebugMode(paused: boolean) {
   effectController.paused = paused;

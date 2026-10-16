@@ -2,15 +2,20 @@
   "name": "aquarium",
   "private": true,
   "version": "0.0.0",
+  "packageManager": "pnpm@10.18.1",
   "type": "module",
   "scripts": {
     "test": "vitest run",
+    "test:rules": "firebase emulators:exec --project demo-aquarium --only database \"vitest run --config vitest.rules.config.ts\"",
+    "emulators": "firebase emulators:start --project demo-aquarium --only auth,database",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^6.0.0",
     "@types/three": "^0.182.0",
+    "firebase-tools": "^15.34.0",
     "happy-dom": "^21.0.1",
     "typescript": "~5.9.3",
     "vite": "^7.2.4",
@@ -18,6 +23,7 @@
   },
   "dependencies": {
     "7.css": "^0.21.1",
+    "firebase": "^13.0.0",
     "three": "^0.182.0"
   }
 }

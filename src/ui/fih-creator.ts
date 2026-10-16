@@ -16,6 +16,7 @@ import { sampleFihSpin } from "./fih-spin";
 import { createFihReleaseFeedback } from "./fih-release";
 import { prioritizeControlClicks } from "./control-pointer-priority";
 import type { FihPreviewFactory } from "./fih-live-preview";
+import type { FihSaveStatus } from "../fih/shared";
 
 function shapeChange(part: FihPart, shape: string): Partial<FihAppearance> {
   return part === "body"
@@ -43,7 +44,8 @@ function lane(part: FihPart) {
 
 export function mountFihCreator(
   onDisplay: (fih: FihDesign) => void,
-  createPreview?: FihPreviewFactory
+  createPreview?: FihPreviewFactory,
+  sharing?: { onRelease: (design: FihDesign) => void; onRetry: () => void }
 ) {
   let storage: Storage | null = null;
   try {
@@ -68,7 +70,8 @@ export function mountFihCreator(
     <div class="fih-editor"><div class="fih-preview"><canvas role="img" aria-label="Preview of your fih"></canvas><span class="fih-release-ripple" aria-hidden="true"></span></div>
     <div class="fih-machine" role="group" aria-label="Fish controls"><div class="fih-lanes">${FIH_PARTS.map(lane).join("")}</div><button type="button" class="fih-spin">spin all</button></div></div>
     <p class="fih-spin-status visually-hidden" role="status" aria-live="polite"></p>
-    <div class="fih-release-row"><div id="fih-count" role="progressbar" tabindex="0" aria-label="Fih earned" aria-valuemin="0" aria-valuemax="${MAX_VISITOR_FIH}" aria-valuenow="0"><div style="width: 0%"></div></div><span class="fih-progress-text" aria-hidden="true"><span class="fih-progress-message"></span> <span class="fih-progress-reward">you get to add ${MAX_VISITOR_FIH} <canvas class="fih-progress-fih" width="32" height="18">fih</canvas></span></span><button class="fih-release" type="submit" disabled>release</button></div>`;
+    <div class="fih-release-row"><div id="fih-count" role="progressbar" tabindex="0" aria-label="Fih earned" aria-valuemin="0" aria-valuemax="${MAX_VISITOR_FIH}" aria-valuenow="0"><div style="width: 0%"></div></div><span class="fih-progress-text" aria-hidden="true"><span class="fih-progress-message"></span> <span class="fih-progress-reward">you get to add ${MAX_VISITOR_FIH} <canvas class="fih-progress-fih" width="32" height="18">fih</canvas></span></span><button class="fih-release" type="submit" disabled>release</button></div>
+    <div class="fih-save-row" hidden><p class="fih-save-status" role="status" aria-live="polite"></p><button class="fih-save-retry" type="button" hidden>retry sharing</button></div>`;
   const fihWindow = createWindow("make a fih", form);
   fihWindow.element.classList.add("fih-window");
   fihWindow.element.id = "fih-creator";
@@ -104,6 +107,23 @@ export function mountFihCreator(
   const miniature = find<HTMLCanvasElement>(".fih-progress-fih");
   const release = find<HTMLButtonElement>(".fih-release");
   const spinStatus = find<HTMLParagraphElement>(".fih-spin-status");
+  const saveRow = find(".fih-save-row");
+  const saveStatus = find(".fih-save-status");
+  const saveRetry = find<HTMLButtonElement>(".fih-save-retry");
+  const saveMessages: Record<FihSaveStatus, string> = {
+    local: "Saved on this device.",
+    saving: "Sharing your fih…",
+    saved: "Saved to the shared aquarium.",
+    offline: "Waiting to share your fih. You can keep editing.",
+    unavailable: "Sharing is unavailable. Your fih can still swim here.",
+  };
+  function setSaveStatus(status: FihSaveStatus, retryable = true) {
+    if (destroyed) return;
+    saveRow.hidden = false;
+    saveStatus.textContent = saveMessages[status];
+    saveRetry.hidden = status !== "unavailable" || !sharing || !retryable;
+  }
+  saveRetry.addEventListener("click", () => sharing?.onRetry(), options);
   const animations = new Set<Animation>();
   let spinFrame = 0;
   let spinTarget: FihAppearance | null = null;
@@ -446,7 +466,12 @@ export function mountFihCreator(
       onDisplay(design);
       releaseFeedback.play();
       released = design;
-      persist();
+      if (persist()) setSaveStatus("local");
+      else {
+        saveRow.hidden = false;
+        saveStatus.textContent = "Your fih can swim this visit, but browser saving is unavailable.";
+      }
+      sharing?.onRelease(design);
       release.textContent = "update";
     },
     options
@@ -493,6 +518,7 @@ export function mountFihCreator(
     options
   );
   return {
+    setSaveStatus,
     destroy() {
       tick();
       persist();

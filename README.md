@@ -2,6 +2,12 @@
 
 Run `pnpm install`, then `pnpm dev`. Use `pnpm build` to make `dist/`.
 
+The `deploy` branch adds optional Firebase shared saves and GitHub Pages hosting.
+Follow [the deployment guide](docs/deployment.md) to create the free Firebase
+project, enable App Check, and configure Pages. Without Firebase configuration,
+the app keeps working with local saves. Run `pnpm test:rules` for the emulator
+security tests (Java 21+ required).
+
 The wide fih window lives in the footer, after the space reserved for experience
 and project windows. Visitors earn one fih every 10 seconds with the page visible,
 capped at 10. Reaching the footer lets them release their full earned swarm.
@@ -76,7 +82,8 @@ flocking, and camera controls. Density, size, rise speed, and opacity multiplier
 start at 1× the values in `src/constants.ts`. Reset experiments restores those
 defaults; experiments last until reload and do not change the constants file.
 
-Shared persistence, email notifications, texture drawing, and deployment come later.
+Shared persistence and deployment are optional; see the deployment guide above.
+Email notifications and texture drawing come later.
 
 The open-water backdrop uses a procedural cyan-to-blue gradient, soft refracted
 sunlight, depth haze, and a world-space particle cloud. Suspended motes drift

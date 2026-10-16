@@ -70,6 +70,28 @@ afterEach(() => {
 });
 
 describe("three-lane creator", () => {
+  it("shares only explicit releases and keeps retry separate from releasing", () => {
+    const saved = { ...DEFAULT_APPEARANCE, count: 2 };
+    localStorage.setItem(VISIT_STORAGE_KEY, JSON.stringify({ elapsed: 20_000, fih: saved }));
+    const display = vi.fn();
+    const onRelease = vi.fn();
+    const onRetry = vi.fn();
+    creator = mountFihCreator(display, undefined, { onRelease, onRetry });
+    expect(display).toHaveBeenCalledWith(saved);
+    expect(onRelease).not.toHaveBeenCalled();
+    reel("body").focus();
+    submit();
+    expect(onRelease).toHaveBeenCalledWith(saved);
+    creator.setSaveStatus("saving");
+    expect(find(".fih-save-status").textContent).toBe("Sharing your fih…");
+    expect(find<HTMLButtonElement>(".fih-save-retry").hidden).toBe(true);
+    creator.setSaveStatus("unavailable");
+    find<HTMLButtonElement>(".fih-save-retry").click();
+    expect(onRetry).toHaveBeenCalledOnce();
+    expect(onRelease).toHaveBeenCalledOnce();
+    creator.setSaveStatus("saved");
+    expect(find(".fih-save-status").textContent).toBe("Saved to the shared aquarium.");
+  });
   it("offers three independently selectable parts and releases only on submit", () => {
     const display = vi.fn();
     creator = mountFihCreator(display);

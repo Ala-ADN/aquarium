@@ -1,0 +1,41 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "settings": {
+      ".read": false,
+      ".write": false
+    },
+    "fih": {
+      ".indexOn": ["updatedAt"],
+      ".read": "query.orderByChild === 'updatedAt' && query.limitToLast !== null && query.limitToLast <= 1000",
+      "$uid": {
+        ".read": "auth !== null && auth.uid === $uid",
+        ".write": "auth !== null && auth.uid === $uid && root.child('settings/writesEnabled').val() === true && newData.exists() && (!data.exists() || now >= data.child('updatedAt').val() + 10000)",
+        ".validate": "newData.hasChildren(['design', 'createdAt', 'updatedAt'])",
+        "createdAt": {
+          ".validate": "newData.isNumber() && ((!data.exists() && newData.val() === now) || (data.exists() && newData.val() === data.val()))"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber() && newData.val() === now"
+        },
+        "design": {
+          ".validate": "newData.hasChildren(['shape', 'finShape', 'headShape', 'color', 'finSize', 'bodySize', 'headSize', 'pattern', 'count'])",
+          "shape": { ".validate": "newData.val() === 'classic' || newData.val() === 'round' || newData.val() === 'diamond' || newData.val() === 'sail'" },
+          "finShape": { ".validate": "newData.val() === 'triangle' || newData.val() === 'fork' || newData.val() === 'fan' || newData.val() === 'ribbon'" },
+          "headShape": { ".validate": "newData.val() === 'pointed' || newData.val() === 'round' || newData.val() === 'blunt'" },
+          "color": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)" },
+          "finColor": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)" },
+          "headColor": { ".validate": "newData.isString() && newData.val().matches(/^#[0-9a-fA-F]{6}$/)" },
+          "finSize": { ".validate": "newData.isNumber() && newData.val() >= 0.6 && newData.val() <= 1.5" },
+          "bodySize": { ".validate": "newData.isNumber() && newData.val() >= 0.6 && newData.val() <= 1.5" },
+          "headSize": { ".validate": "newData.isNumber() && newData.val() >= 0.6 && newData.val() <= 1.5" },
+          "pattern": { ".validate": "newData.val() === 'plain'" },
+          "count": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 10 && newData.val() % 1 === 0" },
+          "$other": { ".validate": false }
+        },
+        "$other": { ".validate": false }
+      }
+    }
+  }
+}
