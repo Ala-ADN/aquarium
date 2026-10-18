@@ -72,12 +72,43 @@ beforeEach(() => {
   });
   const water = createWaterEnvironment(new Scene());
   preview = createFihLivePreview(canvas, DEFAULT_APPEARANCE, { water: water.uniforms, isPaused: () => paused });
+  intersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
   renderer = (WebGLRenderer as unknown as { instances: PreviewRenderer[] }).instances.at(-1)!;
 });
 
 afterEach(() => { preview.destroy(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe("swimming preview", () => {
+  it("creates no WebGL context offscreen, retains edits, and initializes on first visibility", () => {
+    preview.destroy();
+    const renderers = (WebGLRenderer as unknown as { instances: PreviewRenderer[] }).instances;
+    const previousCount = renderers.length;
+    const water = createWaterEnvironment(new Scene());
+    preview = createFihLivePreview(canvas, DEFAULT_APPEARANCE, { water: water.uniforms, isPaused: () => paused });
+    preview.update({ ...DEFAULT_APPEARANCE, bodySize: 1.5 });
+    preview.resize();
+    intersect([{ isIntersecting: false } as IntersectionObserverEntry], {} as IntersectionObserver);
+    expect(renderers).toHaveLength(previousCount);
+    expect(frames.size).toBe(0);
+    intersect([{ isIntersecting: true } as IntersectionObserverEntry], {} as IntersectionObserver);
+    expect(renderers).toHaveLength(previousCount + 1);
+    renderer = renderers.at(-1)!;
+    expect(fish().geometry.getAttribute("position").count).toBeGreaterThan(0);
+    expect(renderer.render).toHaveBeenCalledOnce();
+    expect(frames.size).toBe(1);
+  });
+
+  it("can destroy an unseen preview without creating a context", () => {
+    preview.destroy();
+    const renderers = (WebGLRenderer as unknown as { instances: PreviewRenderer[] }).instances;
+    const previousCount = renderers.length;
+    const water = createWaterEnvironment(new Scene());
+    preview = createFihLivePreview(canvas, DEFAULT_APPEARANCE, { water: water.uniforms, isPaused: () => paused });
+    preview.destroy();
+    expect(renderers).toHaveLength(previousCount);
+    expect(frames.size).toBe(0);
+  });
+
   it("uses the aquarium shader and advances swimming only while the tank is running", () => {
     expect(fish().material.vertexShader).toBe(vertexShader);
     expect(fish().material.wireframe).toBe(false);

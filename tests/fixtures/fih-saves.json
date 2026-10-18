@@ -1,0 +1,41 @@
+{
+  "visitV1": {
+    "elapsed": 40000,
+    "fish": { "shape": "long", "color": "#C8BFE7", "count": 4 }
+  },
+  "visitV2": {
+    "elapsed": 40000,
+    "fih": { "shape": "sail", "color": "#C8BFE7", "finColor": "#B5E61D", "pattern": "spots", "count": 4 }
+  },
+  "unversioned": {
+    "createdAt": 1792194775460,
+    "updatedAt": 1792194775460,
+    "design": {
+      "bodySize": 1.25,
+      "color": "#c8bfe7",
+      "count": 4,
+      "finColor": "#b5e61d",
+      "finShape": "fork",
+      "finSize": 1.15,
+      "headColor": "#efe4b0",
+      "headShape": "pointed",
+      "headSize": 0.9,
+      "pattern": "plain",
+      "shape": "sail"
+    }
+  },
+  "versioned": {
+    "schemaVersion": 1,
+    "shape": "sail",
+    "finShape": "fork",
+    "headShape": "pointed",
+    "color": "#c8bfe7",
+    "finColor": "#b5e61d",
+    "headColor": "#efe4b0",
+    "finSize": 1.15,
+    "bodySize": 1.25,
+    "headSize": 0.9,
+    "pattern": "plain",
+    "count": 4
+  }
+}

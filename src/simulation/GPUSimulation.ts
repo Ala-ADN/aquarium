@@ -1,7 +1,7 @@
 // filepath: c:\code\aquarium\src\simulation\GPUSimulation.ts
 import { WebGLRenderer, Vector3, RepeatWrapping, Texture } from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
-import { BOUNDS, BOUNDS_HALF, FIH_FLOCKING, WIDTH } from "../constants";
+import { BOUNDS, BOUNDS_HALF, FIH_FLOCKING, INITIAL_FIH, WIDTH } from "../constants";
 import fragmentShaderPosition from "../fih/shader/position.glsl?raw";
 import fragmentShaderVelocity from "../fih/shader/velocity.glsl?raw";
 
@@ -11,15 +11,21 @@ export class GPUSimulation {
   positionVariable: any;
   positionUniforms: any;
   velocityUniforms: any;
+  private initialPosition: Texture;
+  private initialVelocity: Texture;
+  private initialized = false;
+  private initializationError: string | null = null;
 
   constructor(renderer: WebGLRenderer) {
     this.gpuCompute = new GPUComputationRenderer(WIDTH, WIDTH, renderer);
+    this.initialPosition = this.gpuCompute.createTexture();
+    this.initialVelocity = this.gpuCompute.createTexture();
     this.init();
   }
 
   private init() {
-    const dtPosition = this.gpuCompute.createTexture();
-    const dtVelocity = this.gpuCompute.createTexture();
+    const dtPosition = this.initialPosition;
+    const dtVelocity = this.initialVelocity;
     this.fillPositionTexture(dtPosition);
     this.fillVelocityTexture(dtVelocity);
 
@@ -52,16 +58,15 @@ export class GPUSimulation {
     this.positionVariable.wrapS = RepeatWrapping;
     this.positionVariable.wrapT = RepeatWrapping;
 
-    const error = this.gpuCompute.init();
-    if (error !== null) {
-      console.error(error);
-    }
+    // Initial data textures can draw the tank immediately. Allocate ping-pong
+    // targets and compile the copy/compute passes only when simulation starts.
   }
 
   private initUniforms() {
     this.positionUniforms["time"] = { value: 0.0 };
     this.positionUniforms["delta"] = { value: 0.0 };
     this.velocityUniforms["time"] = { value: 1.0 };
+    this.velocityUniforms["activeCount"] = { value: INITIAL_FIH };
     this.velocityUniforms["delta"] = { value: 0.0 };
     this.velocityUniforms["testing"] = { value: 1.0 };
     this.velocityUniforms["separationDistance"] = { value: FIH_FLOCKING.separation };
@@ -94,14 +99,23 @@ export class GPUSimulation {
   }
 
   compute() {
+    if (this.initializationError !== null) return;
+    if (!this.initialized) {
+      this.initializationError = this.gpuCompute.init();
+      if (this.initializationError !== null) {
+        console.error(this.initializationError);
+        return;
+      }
+      this.initialized = true;
+    }
     this.gpuCompute.compute();
   }
 
   getCurrentPositionTexture(): Texture {
-    return this.gpuCompute.getCurrentRenderTarget(this.positionVariable).texture;
+    return this.initialized ? this.gpuCompute.getCurrentRenderTarget(this.positionVariable).texture : this.initialPosition;
   }
 
   getCurrentVelocityTexture(): Texture {
-    return this.gpuCompute.getCurrentRenderTarget(this.velocityVariable).texture;
+    return this.initialized ? this.gpuCompute.getCurrentRenderTarget(this.velocityVariable).texture : this.initialVelocity;
   }
 }

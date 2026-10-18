@@ -7,7 +7,7 @@ import {
   serverTimestamp, goOffline,
 } from "firebase/database";
 import type { AquariumFirebaseConfig } from "./firebase-config";
-import { parseSharedDesign, parseSharedFih, SHARED_QUERY_LIMIT } from "./shared";
+import { createSharedFihRecord, parseSharedDesign, parseSharedFih, SHARED_QUERY_LIMIT } from "./shared";
 import type { SharedFih } from "./shared";
 import type { FihDesign } from "../types";
 import { startAnalytics } from "../analytics";
@@ -68,11 +68,7 @@ export async function connectFirebaseAquarium(config: AquariumFirebaseConfig, ca
         // The transaction is restricted to this visitor's record. Concurrent visitors
         // never replace the tank; retries preserve the original creation timestamp.
         await runTransaction(ref(database, `fih/${user.uid}`), (current) => {
-          return {
-            design,
-            createdAt: current?.createdAt ?? serverTimestamp(),
-            updatedAt: serverTimestamp(),
-          };
+          return createSharedFihRecord(current, design, serverTimestamp());
         }, { applyLocally: false });
       },
       close() {

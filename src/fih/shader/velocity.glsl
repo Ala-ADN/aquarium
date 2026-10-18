@@ -1,4 +1,5 @@
 uniform float time;
+uniform float activeCount;
 uniform float testing;
 uniform float delta; // about 0.016
 uniform float separationDistance; // 20
@@ -35,6 +36,11 @@ void main() {
 	zoneRadiusSquared = zoneRadius * zoneRadius;
 
 	vec2 uv = gl_FragCoord.xy / resolution.xy;
+	// Inactive slots remain ready for later releases, but never affect the school.
+	if (floor(gl_FragCoord.y) * width + floor(gl_FragCoord.x) >= activeCount) {
+		gl_FragColor = texture2D(textureVelocity, uv);
+		return;
+	}
 	vec3 fihPosition, fihVelocity;
 	vec3 selfPosition = texture2D( texturePosition, uv ).xyz;
 	vec3 selfVelocity = texture2D( textureVelocity, uv ).xyz;
@@ -69,7 +75,9 @@ void main() {
 	dir.y *= CENTRAL_VERTICAL_MULTIPLIER;
 	velocity -= normalize( dir ) * delta * CENTRAL_ATTRACTION_STRENGTH;
 	for ( float y = 0.0; y < height; y++ ) {
+		if (y * width >= activeCount) break;
 		for ( float x = 0.0; x < width; x++ ) {
+			if (y * width + x >= activeCount) break;
 			vec2 ref = vec2( x + 0.5, y + 0.5 ) / resolution.xy;
 			fihPosition = texture2D( texturePosition, ref ).xyz;
 			dir = fihPosition - selfPosition;

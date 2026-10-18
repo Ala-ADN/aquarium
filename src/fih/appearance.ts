@@ -1,8 +1,8 @@
 import { Color } from "three";
 import { DEFAULT_FIH_COLOR, DEFAULT_FIN_SIZE, FIH_FIN_SHADE } from "../constants";
 import type { FihAppearance, FihPart, FihTemplate } from "../types";
-import { FIH_PRESETS, getFihPreset } from "./presets";
-import { FIN_SHAPES, HEAD_SHAPES, MIN_PART_SIZE, MAX_PART_SIZE } from "./parts";
+import { FIH_PRESETS, SUPPORTED_FIH_PRESETS, getFihPreset } from "./presets";
+import { FIN_SHAPES, HEAD_SHAPES, SUPPORTED_FIN_SHAPES, SUPPORTED_HEAD_SHAPES, MIN_PART_SIZE, MAX_PART_SIZE } from "./parts";
 
 // MS Paint palette, in the supplied order.
 export const FIH_PALETTE = [
@@ -40,16 +40,22 @@ export function fihTemplate(appearance: FihAppearance): Partial<FihTemplate> {
     bodyColor: body, finColor: fin, headColor: head, bodySize: appearance.bodySize,
     finSize: appearance.finSize * DEFAULT_FIN_SIZE, headSize: appearance.headSize };
 }
-export function partOptions(part: FihPart): readonly { id: string; label: string }[] {
-  return part === "fin" ? FIN_SHAPES : part === "head" ? HEAD_SHAPES : FIH_PRESETS;
+export function partOptions(part: FihPart, current?: FihAppearance): readonly { id: string; label: string }[] {
+  const choices = part === "fin" ? FIN_SHAPES : part === "head" ? HEAD_SHAPES : FIH_PRESETS;
+  // Display a restored retired style until the visitor explicitly changes it.
+  const selected = current && partShape(current, part);
+  if (!selected || choices.some(({ id }) => id === selected)) return choices;
+  const supported = part === "fin" ? SUPPORTED_FIN_SHAPES : part === "head" ? SUPPORTED_HEAD_SHAPES : SUPPORTED_FIH_PRESETS;
+  const retained = supported.find(({ id }) => id === selected);
+  return retained ? [...choices, retained] : choices;
 }
 export function partShape(appearance: FihAppearance, part: FihPart) {
   return part === "fin" ? appearance.finShape : part === "head" ? appearance.headShape : appearance.shape;
 }
 export function describeFih(appearance: FihAppearance) {
   const name = (hex: string) => FIH_PALETTE.find((color) => color.hex === hex.toLowerCase())?.name ?? hex;
-  const finName = FIN_SHAPES.find((item) => item.id === appearance.finShape)!.label;
-  const headName = HEAD_SHAPES.find((item) => item.id === appearance.headShape)!.label;
+  const finName = SUPPORTED_FIN_SHAPES.find((item) => item.id === appearance.finShape)!.label;
+  const headName = SUPPORTED_HEAD_SHAPES.find((item) => item.id === appearance.headShape)!.label;
   return `${finName} fin · ${name(appearance.color)} ${getFihPreset(appearance.shape).label} body · ${headName} head`;
 }
 export function randomizeFih(current: FihAppearance, random = Math.random): FihAppearance {

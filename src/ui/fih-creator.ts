@@ -234,7 +234,7 @@ export function mountFihCreator(
   }
   function drawReels() {
     for (const part of FIH_PARTS) {
-      const choices = partOptions(part);
+      const choices = partOptions(part, draft.appearance);
       const index = choices.findIndex(({ id }) => id === partShape(draft.appearance, part));
       find(`.fih-lane[data-part="${part}"]`)
         .querySelectorAll<HTMLCanvasElement>("canvas")
@@ -261,10 +261,11 @@ export function mountFihCreator(
     releaseFeedback.cancel();
     const colors = resolveFihColors(draft.appearance);
     for (const part of FIH_PARTS) {
-      const choices = partOptions(part);
+      const choices = partOptions(part, draft.appearance);
       const index = choices.findIndex(({ id }) => id === partShape(draft.appearance, part));
       const reel = find(`.fih-lane[data-part="${part}"] .fih-reel`);
       reel.dataset.shape = choices[index].id;
+      reel.setAttribute("aria-valuemax", String(choices.length));
       reel.setAttribute("aria-valuenow", String(index + 1));
       reel.setAttribute("aria-valuetext", choices[index].label);
       find<HTMLInputElement>(`#fih-${part}-picker`).value = `#${colors[part].getHexString()}`;
@@ -362,7 +363,7 @@ export function mountFihCreator(
     }
     function cycle(direction: number) {
       const index = choices.findIndex(({ id }) => id === partShape(draft.appearance, part));
-      selectShape(index + direction);
+      selectShape(index < 0 ? direction > 0 ? 0 : choices.length - 1 : index + direction);
     }
     column.querySelectorAll<HTMLButtonElement>(".fih-reel-arrow").forEach((button) =>
       button.addEventListener(

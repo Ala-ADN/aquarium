@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { DEFAULT_APPEARANCE } from "../src/fih/appearance";
 import { createSharedFihSync } from "../src/fih/shared-sync";
-import { PENDING_FIH_KEY, SHARED_SAVE_INTERVAL_MS } from "../src/fih/shared";
+import { LEGACY_PENDING_FIH_KEY, PENDING_FIH_KEY, SHARED_SAVE_INTERVAL_MS } from "../src/fih/shared";
+import { serializeFihDesign } from "../src/fih/design";
 
 const design = { ...DEFAULT_APPEARANCE, count: 2 };
 const nextDesign = { ...design, color: "#123456" };
@@ -18,6 +19,51 @@ beforeEach(() => vi.useFakeTimers());
 afterEach(() => { sync?.destroy(); vi.useRealTimers(); });
 
 describe("shared save outbox", () => {
+  it("recovers the legacy outbox and removes it only after acknowledgement", async () => {
+    const local = storage();
+    const raw = JSON.stringify(design);
+    local.setItem(LEGACY_PENDING_FIH_KEY, raw);
+    let acknowledge!: () => void;
+    const send = vi.fn(() => new Promise<void>((resolve) => { acknowledge = resolve; }));
+    sync = createSharedFihSync({ send, onStatus: vi.fn(), storage: local });
+    expect(local.getItem(LEGACY_PENDING_FIH_KEY)).toBe(raw);
+    sync.retry();
+    expect(send).toHaveBeenCalledWith(design);
+    expect(local.getItem(LEGACY_PENDING_FIH_KEY)).toBe(raw);
+    acknowledge();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(local.getItem(LEGACY_PENDING_FIH_KEY)).toBeNull();
+  });
+  it.each([
+    { ...design, schemaVersion: 2, effects: { glow: 1 } },
+    { ...design, schemaVersion: 1, effects: { glow: 1 } },
+  ])("never overwrites or publishes an unsupported outbox format", async (future) => {
+    const local = storage();
+    const raw = JSON.stringify(future);
+    local.setItem(PENDING_FIH_KEY, raw);
+    local.setItem(LEGACY_PENDING_FIH_KEY, JSON.stringify(design));
+    const send = vi.fn();
+    const onStatus = vi.fn();
+    sync = createSharedFihSync({ send, onStatus, storage: local });
+    sync.retry();
+    sync.submit(nextDesign);
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(send).not.toHaveBeenCalled();
+    expect(local.getItem(PENDING_FIH_KEY)).toBe(raw);
+    expect(onStatus).toHaveBeenLastCalledWith("unavailable");
+  });
+  it("protects an outbox upgraded by another tab after this tab loaded", async () => {
+    const local = storage();
+    const send = vi.fn().mockResolvedValue(undefined);
+    const onStatus = vi.fn();
+    sync = createSharedFihSync({ send, onStatus, storage: local });
+    const future = JSON.stringify({ ...design, schemaVersion: 2 });
+    local.setItem(PENDING_FIH_KEY, future);
+    sync.submit(design);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(send).not.toHaveBeenCalled();
+    expect(local.getItem(PENDING_FIH_KEY)).toBe(future);
+  });
   it("does not acknowledge before the server or clear a newer pending design", async () => {
     let acknowledge!: () => void;
     const send = vi.fn().mockImplementationOnce(() => new Promise<void>((resolve) => { acknowledge = resolve; }))
@@ -31,7 +77,7 @@ describe("shared save outbox", () => {
     expect(onStatus).not.toHaveBeenCalledWith("saved");
     acknowledge();
     await vi.advanceTimersByTimeAsync(0);
-    expect(JSON.parse(local.getItem(PENDING_FIH_KEY)!)).toEqual(nextDesign);
+    expect(JSON.parse(local.getItem(PENDING_FIH_KEY)!)).toEqual(serializeFihDesign(nextDesign));
     await vi.advanceTimersByTimeAsync(SHARED_SAVE_INTERVAL_MS + 100);
     expect(send).toHaveBeenLastCalledWith(nextDesign);
     expect(local.getItem(PENDING_FIH_KEY)).toBeNull();

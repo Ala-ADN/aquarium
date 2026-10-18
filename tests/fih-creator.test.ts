@@ -132,7 +132,9 @@ describe("three-lane creator", () => {
     expect(display).toHaveBeenCalledTimes(1);
     expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih).toEqual(saved);
     submit();
-    expect(display).toHaveBeenLastCalledWith({ ...saved, headShape: "round" });
+    const { schemaVersion, ...appearance } = saved;
+    expect(schemaVersion).toBe(1);
+    expect(display).toHaveBeenLastCalledWith({ ...appearance, headShape: "round" });
   });
   it("keeps visual controls without part labels, shape descriptors, or size readouts", () => {
     creator = mountFihCreator(vi.fn());

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_APPEARANCE } from "../src/fih/appearance";
 import { FihGeometry } from "../src/fih/geometry/fih";
-import { MAX_FIH, WIDTH } from "../src/constants";
+import { INITIAL_FIH, MAX_FIH, WIDTH } from "../src/constants";
 import { parseSharedDesign, parseSharedFih, selectSharedSchool } from "../src/fih/shared";
 import { readFirebaseConfig } from "../src/fih/firebase-config";
 
@@ -28,11 +28,20 @@ describe("untrusted shared fih", () => {
 });
 
 describe("bounded shared school", () => {
+  it("starts with 30 background fih and grows with released swarms", () => {
+    expect(INITIAL_FIH).toBe(30);
+    expect(selectSharedSchool([], null, null)).toMatchObject({ count: 0, backgroundCount: 30, totalCount: 30 });
+    expect(selectSharedSchool([], design, "owner")).toMatchObject({ count: 10, backgroundCount: 30, totalCount: 40 });
+    const entries = [{ ownerId: "other", design, updatedAt: 1 }];
+    expect(selectSharedSchool(entries, design, "owner")).toMatchObject({ count: 20, backgroundCount: 30, totalCount: 50 });
+  });
   it("reserves the local swarm, excludes its cloud duplicate, and never renders over 1000", () => {
     const entries = Array.from({ length: 200 }, (_, i) => ({ ownerId: String(i), design, updatedAt: i }));
     const school = selectSharedSchool(entries, design, "199");
     expect(MAX_FIH).toBe(1000);
     expect(school.count).toBe(1000);
+    expect(school.backgroundCount).toBe(0);
+    expect(school.totalCount).toBe(MAX_FIH);
     expect(school.placements).toHaveLength(99);
     expect(school.placements[0].offset).toBe(10);
     expect(school.placements.at(-1)!.offset).toBe(990);

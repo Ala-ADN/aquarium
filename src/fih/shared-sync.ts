@@ -1,5 +1,6 @@
 import type { FihDesign } from "../types";
-import { parseSharedDesign, PENDING_FIH_KEY, SHARED_RETRY_AT_KEY, SHARED_SAVE_INTERVAL_MS } from "./shared";
+import { parseSharedDesign, PENDING_FIH_KEY, LEGACY_PENDING_FIH_KEY, SHARED_RETRY_AT_KEY, SHARED_SAVE_INTERVAL_MS } from "./shared";
+import { isProtectedFihDesign, serializeFihDesign } from "./design";
 import type { FihSaveStatus } from "./shared";
 
 interface SyncOptions {
@@ -12,9 +13,18 @@ interface SyncOptions {
 // A slow Firebase operation stays in flight: starting another could publish stale data.
 export function createSharedFihSync({ send, onStatus, storage }: SyncOptions) {
   let pending: FihDesign | null = null;
+  let pendingRaw: string | null = null;
+  let pendingKey = PENDING_FIH_KEY;
+  let legacyRaw: string | null = null;
   let nextSaveAt = 0;
   try {
-    pending = parseSharedDesign(JSON.parse(storage?.getItem(PENDING_FIH_KEY) ?? "null"));
+    legacyRaw = storage?.getItem(LEGACY_PENDING_FIH_KEY) ?? null;
+    pendingRaw = storage?.getItem(PENDING_FIH_KEY) ?? null;
+    if (pendingRaw === null) {
+      pendingRaw = legacyRaw;
+      pendingKey = LEGACY_PENDING_FIH_KEY;
+    }
+    pending = parseSharedDesign(JSON.parse(pendingRaw ?? "null"));
     const retryAt = Number(storage?.getItem(SHARED_RETRY_AT_KEY));
     if (Number.isFinite(retryAt) && retryAt > 0) {
       // A stale/edited local clock must not defer sharing indefinitely.
@@ -27,6 +37,12 @@ export function createSharedFihSync({ send, onStatus, storage }: SyncOptions) {
   let destroyed = false;
   let scheduled: ReturnType<typeof setTimeout> | undefined;
   let slow: ReturnType<typeof setTimeout> | undefined;
+
+  function canSave() {
+    try {
+      return !isProtectedFihDesign(JSON.parse(storage?.getItem(PENDING_FIH_KEY) ?? "null"));
+    } catch { return true; /* Browser storage is optional; corrupt entries may be replaced. */ }
+  }
 
   function rememberCooldown() {
     nextSaveAt = Date.now() + SHARED_SAVE_INTERVAL_MS + 100;
@@ -41,9 +57,12 @@ export function createSharedFihSync({ send, onStatus, storage }: SyncOptions) {
   }
   async function flush() {
     if (destroyed || inFlight || !pending) return;
+    if (!canSave()) { onStatus("unavailable"); return; }
     inFlight = true;
     const sentRevision = revision;
     const design = pending;
+    const sentRaw = pendingRaw;
+    const sentKey = pendingKey;
     rememberCooldown();
     onStatus("saving");
     slow = setTimeout(() => { if (!destroyed) onStatus("offline"); }, 8_000);
@@ -55,7 +74,12 @@ export function createSharedFihSync({ send, onStatus, storage }: SyncOptions) {
         pending = null;
         try {
           // Another tab may have queued a newer design in the same browser.
-          if (storage?.getItem(PENDING_FIH_KEY) === JSON.stringify(design)) storage.removeItem(PENDING_FIH_KEY);
+          if (sentRaw !== null && storage?.getItem(sentKey) === sentRaw) storage.removeItem(sentKey);
+          // A successful newer release supersedes the legacy outbox we restored.
+          if (legacyRaw !== null && storage?.getItem(LEGACY_PENDING_FIH_KEY) === legacyRaw) {
+            storage.removeItem(LEGACY_PENDING_FIH_KEY);
+            legacyRaw = null;
+          }
         } catch { /* Local release is still saved separately. */ }
         onStatus("saved");
       }
@@ -72,9 +96,12 @@ export function createSharedFihSync({ send, onStatus, storage }: SyncOptions) {
     submit(value: FihDesign) {
       const design = parseSharedDesign(value);
       if (destroyed || !design) return;
+      if (!canSave()) { onStatus("unavailable"); return; }
       pending = design;
+      pendingKey = PENDING_FIH_KEY;
+      pendingRaw = JSON.stringify(serializeFihDesign(design));
       revision++;
-      try { storage?.setItem(PENDING_FIH_KEY, JSON.stringify(design)); } catch { /* Saving can still work online. */ }
+      try { storage?.setItem(PENDING_FIH_KEY, pendingRaw); } catch { /* Saving can still work online. */ }
       onStatus("saving");
       schedule();
     },

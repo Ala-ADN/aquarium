@@ -7,7 +7,6 @@ import {
   Mesh,
   ShaderMaterial,
   DoubleSide,
-  AxesHelper,
   BufferGeometry,
 } from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
@@ -15,25 +14,21 @@ import { FihGeometry } from "./fih/geometry/fih";
 import { fihTemplate } from "./fih/appearance";
 import { getPatternTexture } from "./fih/pattern-texture";
 import { GPUSimulation } from "./simulation/GPUSimulation";
-import { GUI } from "three/addons/libs/lil-gui.module.min.js";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
   BACKGROUND_GRADIENT,
   CAMERA_SETTINGS,
   FIH_FIN_SHADE,
   FIH_FLOCKING,
-  MAX_FIH,
+  INITIAL_FIH,
   MAX_RENDER_PIXEL_RATIO,
 } from "./constants";
-import { mountFihCreator } from "./ui/fih-creator";
-import { createFihLivePreview } from "./ui/fih-live-preview";
-import { addDebugControls } from "./ui/debug";
 import { createWaterEnvironment, withWaterColor } from "./water/WaterEnvironment";
 import type { FihDesign } from "./types";
 import { readFirebaseConfig } from "./fih/firebase-config";
 import { selectSharedSchool } from "./fih/shared";
-import type { SharedFih } from "./fih/shared";
+import type { FihSaveStatus, SharedFih } from "./fih/shared";
 import { createSharedFihSync } from "./fih/shared-sync";
+import { readVisit } from "./fih/visit";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
 
@@ -53,7 +48,7 @@ const gpuSim = new GPUSimulation(renderer);
 const water = createWaterEnvironment(scene);
 water.resize(window.innerWidth, window.innerHeight, renderer.getPixelRatio());
 
-const geometry = new FihGeometry();
+const geometry = new FihGeometry({}, INITIAL_FIH);
 const fihUniforms = {
   ...water.uniforms,
   texturePosition: { value: gpuSim.getCurrentPositionTexture() },
@@ -107,11 +102,18 @@ let sharedEntries: SharedFih[] = [];
 let schoolKey = "";
 let schoolFrame = 0;
 let sharing: ReturnType<typeof createSharedFihSync> | null = null;
+let backgroundOffset = 0;
+let backgroundCount = INITIAL_FIH;
 
 function refreshSchool() {
   const school = selectSharedSchool(sharedEntries, ownDesign, ownerId);
-  const verticesPerFih = geometry.getAttribute("position").count / MAX_FIH;
-  geometry.setDrawRange(school.count * verticesPerFih, (MAX_FIH - school.count) * verticesPerFih);
+  if (backgroundOffset !== school.count || backgroundCount !== school.backgroundCount) {
+    fihMesh.geometry.dispose();
+    fihMesh.geometry = new FihGeometry({}, school.backgroundCount, school.count);
+    backgroundOffset = school.count;
+    backgroundCount = school.backgroundCount;
+  }
+  gpuSim.velocityUniforms.activeCount.value = school.totalCount;
   const key = JSON.stringify(school.placements);
   if (key === schoolKey) return;
   schoolKey = key;
@@ -149,20 +151,12 @@ function displayFih(design: FihDesign) {
   refreshSchool();
 }
 
-// orbit controls
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.05;
-controls.enabled = false; // Start disabled
-
-// Add axis helper
-const axesHelper = new AxesHelper(100);
-axesHelper.visible = false;
-scene.add(axesHelper);
-
-const gui = new GUI();
 const debug = new URLSearchParams(window.location.search).has("debug");
-if (!debug) gui.hide();
+let debugPanel: ReturnType<typeof import("./ui/debug-panel")["createDebugPanel"]> | null = null;
+let debugLoading: Promise<void> | null = null;
+let creator: ReturnType<typeof import("./ui/fih-editor")["mountFihEditor"]> | null = null;
+let saveStatus: { status: FihSaveStatus; retryable: boolean } | null = null;
+let disposed = false;
 
 const effectController = {
   separation: Number(FIH_FLOCKING.separation),
@@ -171,14 +165,41 @@ const effectController = {
   paused: false,
 };
 
-const creator = mountFihCreator(displayFih, (preview, appearance) => createFihLivePreview(preview, appearance, {
-  water: water.uniforms,
-  isPaused: () => effectController.paused,
-}), {
-  onRelease: (design) => sharing?.submit(design),
-  onRetry: () => sharing?.retry(),
-});
-restoringVisit = false;
+// Restore saved fih independently of the editor's deferred download and setup.
+try {
+  const saved = readVisit(localStorage).fih;
+  if (saved) displayFih(saved);
+} catch { /* The tank still starts when browser storage is unavailable. */ }
+
+function setSaveStatus(status: FihSaveStatus, retryable = true) {
+  saveStatus = { status, retryable };
+  creator?.setSaveStatus(status, retryable);
+}
+
+async function loadEditor() {
+  try {
+    const { mountFihEditor } = await import("./ui/fih-editor");
+    if (disposed) return;
+    creator = mountFihEditor({
+      onDisplay: displayFih, water: water.uniforms,
+      isPaused: () => effectController.paused,
+      onRelease: (design) => sharing?.submit(design),
+      onRetry: () => sharing?.retry(),
+    });
+    restoringVisit = false;
+    if (saveStatus) creator.setSaveStatus(saveStatus.status, saveStatus.retryable);
+  } catch {
+    if (disposed) return;
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.style.pointerEvents = "auto";
+    retry.textContent = "retry loading fih creator";
+    // Failed module fetches may be cached, and a deployment may have replaced
+    // the old chunk URL. Reload the entry document to recover in either case.
+    retry.addEventListener("click", () => window.location.reload(), { once: true });
+    document.querySelector("#fih-footer")?.replaceChildren(retry);
+  }
+}
 
 // Loading Firebase never blocks the animation or browser-only persistence.
 const firebaseConfig = readFirebaseConfig(import.meta.env, import.meta.env.DEV);
@@ -186,13 +207,12 @@ if (firebaseConfig) {
   type FirebaseClient = Awaited<ReturnType<typeof import("./fih/firebase")["connectFirebaseAquarium"]>>;
   let client: FirebaseClient | null = null;
   let connecting: Promise<FirebaseClient> | null = null;
-  let disposed = false;
   const connect = () => {
     if (!connecting) connecting = import("./fih/firebase").then(({ connectFirebaseAquarium }) =>
       connectFirebaseAquarium(firebaseConfig, {
         onEntries: (entries) => { sharedEntries = entries; scheduleSchool(); },
         onOwner: (id) => { ownerId = id; scheduleSchool(); },
-        onError: () => creator.setSaveStatus("unavailable", false),
+        onError: () => setSaveStatus("unavailable", false),
         onConnected: () => sharing?.retry(),
       })
     ).then((connected) => {
@@ -206,12 +226,12 @@ if (firebaseConfig) {
   try { storage = localStorage; } catch { /* The current visit can still share online. */ }
   sharing = createSharedFihSync({
     send: async (design) => { await (await connect()).save(design); },
-    onStatus: (status) => creator.setSaveStatus(status),
+    onStatus: (status) => setSaveStatus(status),
     storage,
   });
   const reconnect = () => sharing?.retry();
   window.addEventListener("online", reconnect);
-  void connect().catch(() => creator.setSaveStatus("unavailable", false));
+  void connect().catch(() => setSaveStatus("unavailable", false));
   sharing.retry();
   import.meta.hot?.dispose(() => {
     disposed = true;
@@ -224,14 +244,18 @@ if (firebaseConfig) {
 
 function setDebugMode(paused: boolean) {
   effectController.paused = paused;
-  controls.enabled = paused;
-  axesHelper.visible = paused;
-  if (paused || debug) {
-    gui.show();
-    if (paused) gui.open();
-  }
-  else gui.hide();
-  gui.controllersRecursive().forEach((controller) => controller.updateDisplay());
+  if (debugPanel) debugPanel.setVisible(paused || debug);
+  else if (paused || debug) void loadDebug();
+}
+
+function loadDebug() {
+  if (!debugLoading) debugLoading = import("./ui/debug-panel").then(({ createDebugPanel }) => {
+    if (disposed) return;
+    debugPanel = createDebugPanel({ canvas, water, camera, scene, gpuSim,
+      flocking: effectController, onFlockingChange: valuesChanger, onPauseChange: setDebugMode });
+    debugPanel.setVisible(effectController.paused || debug);
+  }).catch(() => { debugLoading = null; });
+  return debugLoading;
 }
 
 const valuesChanger = function () {
@@ -242,13 +266,12 @@ const valuesChanger = function () {
 
 valuesChanger();
 
-gui.add(effectController, "paused").name("Pause Simulation").onChange(setDebugMode);
-addDebugControls(gui, { water, camera, controls, scene, gpuSim, flocking: effectController, onFlockingChange: valuesChanger });
-if (!debug) gui.close();
-
 let lastTime = performance.now();
 let mouseX = 0;
 let mouseY = 0;
+let renderedFirstFrame = false;
+let deferredFrame = 0;
+let deferredWork: ReturnType<typeof setTimeout> | undefined;
 
 renderer.setAnimationLoop(() => {
   const now = performance.now();
@@ -257,7 +280,7 @@ renderer.setAnimationLoop(() => {
   lastTime = now;
   visitorMaterial.uniforms.releaseGlow.value = Math.max(0, 1 - (now - releasedAt) / 800);
 
-  if (!effectController.paused) {
+  if (!effectController.paused && renderedFirstFrame) {
     water.update(delta);
     // Update GPU simulation uniforms
     gpuSim.positionUniforms["time"].value = now;
@@ -288,8 +311,28 @@ renderer.setAnimationLoop(() => {
     fihUniforms["textureVelocity"].value = gpuSim.getCurrentVelocityTexture();
   }
   // Render scene
-  if (controls.enabled) controls.update();
+  debugPanel?.update();
   renderer.render(scene, camera);
+  if (!renderedFirstFrame) {
+    renderedFirstFrame = true;
+    // Give the browser a paint before loading CSS, editor DOM, or debug tools.
+    deferredFrame = requestAnimationFrame(() => {
+      deferredWork = setTimeout(() => {
+        if (disposed) return;
+        void loadEditor();
+        if (debug || effectController.paused) void loadDebug();
+      }, 0);
+    });
+  }
+});
+
+import.meta.hot?.dispose(() => {
+  disposed = true;
+  cancelAnimationFrame(deferredFrame);
+  clearTimeout(deferredWork);
+  creator?.destroy();
+  debugPanel?.destroy();
+  renderer.setAnimationLoop(null);
 });
 
 const resize = () => {

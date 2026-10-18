@@ -8,10 +8,12 @@ export interface FihPreset {
   tailLength: number;
   tailHeight: number;
   outline?: ReadonlyArray<readonly [number, number]>;
+  selectable?: boolean;
 }
 
 // Outline coordinates are fractions of body length and half-height (z, y).
-export const FIH_PRESETS: readonly FihPreset[] = [
+// Retire a shape with selectable: false; retain its ID and geometry for saved fih.
+export const SUPPORTED_FIH_PRESETS: readonly FihPreset[] = [
   { id: "classic", label: "classic", length: 60, height: 15, tailLength: 20, tailHeight: 20 },
   { id: "round", label: "chubby", length: 40, height: 22, tailLength: 20, tailHeight: 20,
     outline: [[0, 0], [.2, 1], [.75, 1], [1, 0], [.75, -1], [.2, -1]] },
@@ -21,6 +23,8 @@ export const FIH_PRESETS: readonly FihPreset[] = [
     outline: [[0, 0], [.2, .4], [.45, 2], [.7, .4], [1, 0], [.7, -1], [.2, -.7]] },
 ];
 
+export const FIH_PRESETS = SUPPORTED_FIH_PRESETS.filter((preset) => preset.selectable !== false);
+
 export function getFihPreset(shape: FihShape): FihPreset {
-  return FIH_PRESETS.find((preset) => preset.id === shape)!;
+  return SUPPORTED_FIH_PRESETS.find((preset) => preset.id === shape)!;
 }

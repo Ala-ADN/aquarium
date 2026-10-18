@@ -20,7 +20,7 @@ export function sampleFihSpin(from: FihAppearance, target: FihAppearance, elapse
     const duration = FIH_SPIN_DURATION + lane * FIH_SPIN_STAGGER;
     const progress = Math.max(0, Math.min(1, elapsed / duration));
     const spinning = progress < 1;
-    const choices = partOptions(part);
+    const choices = partOptions(part, from);
     const start = choices.findIndex(({ id }) => id === partShape(from, part));
     const end = choices.findIndex(({ id }) => id === partShape(target, part));
     const shapeTravel = travel(start, end, choices.length, 4, progress);

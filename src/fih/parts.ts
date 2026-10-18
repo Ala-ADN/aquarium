@@ -3,16 +3,18 @@ import type { FihPart, FihTemplate, FihFinShape, FihHeadShape } from "../types";
 import { DEFAULT_FIN_SIZE } from "../constants";
 import { getFihPreset } from "./presets";
 
-export const FIN_SHAPES: readonly { id: FihFinShape; label: string; outline: readonly (readonly [number, number])[] }[] = [
+export const SUPPORTED_FIN_SHAPES: readonly { id: FihFinShape; label: string; selectable?: boolean; outline: readonly (readonly [number, number])[] }[] = [
   { id: "triangle", label: "triangle", outline: [[0, 0], [-20, 20], [-20, -20]] },
   { id: "fork", label: "forked", outline: [[0, 0], [-24, 22], [-16, 0], [-24, -22]] },
   { id: "fan", label: "fan", outline: [[0, 0], [-12, 28], [-22, 16], [-24, 0], [-22, -16], [-12, -28]] },
   { id: "ribbon", label: "ribbon", outline: [[0, 0], [-20, 10], [-32, 0], [-20, -10]] },
 ];
-export const HEAD_SHAPES: readonly { id: FihHeadShape; label: string }[] = [
+export const SUPPORTED_HEAD_SHAPES: readonly { id: FihHeadShape; label: string; selectable?: boolean }[] = [
   { id: "pointed", label: "pointed" }, { id: "round", label: "rounded" },
   { id: "blunt", label: "blunt" },
 ];
+export const FIN_SHAPES = SUPPORTED_FIN_SHAPES.filter((shape) => shape.selectable !== false);
+export const HEAD_SHAPES = SUPPORTED_HEAD_SHAPES.filter((shape) => shape.selectable !== false);
 export const FIH_PARTS: readonly FihPart[] = ["fin", "body", "head"];
 export const MIN_PART_SIZE = .6;
 export const MAX_PART_SIZE = 1.5;
@@ -65,7 +67,7 @@ export function createFihParts(template: Partial<FihTemplate>): FihTriangle[] {
     : headShape === "blunt"
       ? [upperVertex, [neck + headLength, mid + headHeight * .85], [neck + headLength, mid - headHeight * .85], lowerVertex]
       : [upperVertex, [neck + headLength, mid], lowerVertex];
-  const fin = FIN_SHAPES.find((item) => item.id === (template.finShape ?? "triangle"))!;
+  const fin = SUPPORTED_FIN_SHAPES.find((item) => item.id === (template.finShape ?? "triangle"))!;
   return [
     ...triangulatePart(fin.outline.map(([z, y]) => [z * finSize, y * finSize]), "fin"),
     ...triangulatePart(body, "body"), ...triangulatePart(head, "head"),

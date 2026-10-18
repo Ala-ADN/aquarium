@@ -23,8 +23,9 @@ export function createFihLivePreview(canvas: HTMLCanvasElement, appearance: FihA
   isPaused: () => boolean;
 }): FihPreviewController {
   const parent = canvas.parentElement!;
-  const renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true });
-  renderer.setClearColor(0, 0);
+  // Creating a second WebGL context is expensive even when nothing is drawn.
+  // Wait until the footer enters view, keeping the initial tank on the fast path.
+  let renderer: WebGLRenderer | null = null;
   const camera = new PerspectiveCamera();
   const scene = new Scene();
   const positionData = new Float32Array([0, 0, 0, 1]);
@@ -60,7 +61,7 @@ export function createFihLivePreview(canvas: HTMLCanvasElement, appearance: FihA
   canvas.dataset.livePreview = "true";
 
   function resize() {
-    if (destroyed) return;
+    if (destroyed || !renderer) return;
     const ratio = Math.min(window.devicePixelRatio || 1, MAX_RENDER_PIXEL_RATIO);
     // Layout dimensions stay stable while the surrounding window tilts.
     const width = Math.max(1, parent.clientWidth);
@@ -79,7 +80,11 @@ export function createFihLivePreview(canvas: HTMLCanvasElement, appearance: FihA
     setFihPreviewCamera(camera, viewport.width, viewport.height);
   }
   function render() {
-    if (destroyed) return;
+    if (destroyed || !visible || document.hidden) return;
+    if (!renderer) {
+      renderer = new WebGLRenderer({ canvas, alpha: true, antialias: true });
+      renderer.setClearColor(0, 0);
+    }
     resize();
     renderer.render(scene, camera);
   }
@@ -116,7 +121,6 @@ export function createFihLivePreview(canvas: HTMLCanvasElement, appearance: FihA
   document.addEventListener("visibilitychange", () => {
     if (document.hidden) stop(); else { render(); schedule(); }
   }, options);
-  render();
   return {
     update(nextAppearance) {
       if (destroyed) return;
@@ -135,7 +139,7 @@ export function createFihLivePreview(canvas: HTMLCanvasElement, appearance: FihA
       if (destroyed) return;
       destroyed = true; stop(); observer.disconnect(); events.abort();
       fish.geometry.dispose(); material.dispose(); position.dispose(); velocity.dispose();
-      renderer.dispose(); renderer.forceContextLoss();
+      renderer?.dispose(); renderer?.forceContextLoss();
     },
   };
 }

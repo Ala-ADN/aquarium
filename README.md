@@ -59,8 +59,19 @@ larger transparent drawing area allows oversized fish to extend beyond the 4:3
 frame without clipping. Tail motion and gentle swimming follow the tank's pause
 state and stop rendering offscreen or in a hidden tab.
 
-Released designs and earned time are saved as `aquarium.visitor.v3`. Older v1/v2
-saves migrate without deleting the original data. Storage errors still permit
+The tank starts with 30 background fih and grows with visitor releases, up to
+1,000 visible fih. Only active simulation slots participate in flocking.
+The first frame uses seeded position/velocity textures before initializing GPU
+simulation. The creator and its window styles load after the first tank frame;
+its preview creates a WebGL context only when visible. Saved fih restore before
+the creator loads. Debug controls download only on **Space** or with `?debug`.
+
+Released designs and earned time are saved as `aquarium.visitor.v4`, with explicit
+versions for the visit and design. Older v1/v2/v3 saves migrate without deleting
+the original data. Shared saves and the release outbox use the same design codec.
+Unsupported future formats are preserved and cannot be overwritten by this client.
+See [design compatibility](docs/fih-compatibility.md) before changing stored fields
+or retiring styles. Storage errors still permit
 release during the current visit. All controls support the keyboard, and the
 three part columns remain side by side on mobile, with the 4:3 preview above them.
 

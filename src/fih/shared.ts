@@ -1,13 +1,12 @@
-import { MAX_FIH, MAX_VISITOR_FIH } from "../constants";
-import { isHexColor, isPartSize } from "./appearance";
-import { FIN_SHAPES, HEAD_SHAPES } from "./parts";
-import { FIH_PRESETS } from "./presets";
+import { INITIAL_FIH, MAX_FIH } from "../constants";
+import { hasUnsupportedDesignVersion, isRecord, parseFihDesign, serializeFihDesign } from "./design";
 import type { FihDesign } from "../types";
 
 // Keep these limits in sync with database.rules.json.
 export const SHARED_QUERY_LIMIT = 1000;
 export const SHARED_SAVE_INTERVAL_MS = 10_000;
-export const PENDING_FIH_KEY = "aquarium.pending.v1";
+export const PENDING_FIH_KEY = "aquarium.pending.v2";
+export const LEGACY_PENDING_FIH_KEY = "aquarium.pending.v1";
 export const SHARED_RETRY_AT_KEY = "aquarium.sharedRetryAt.v1";
 
 export interface SharedFih {
@@ -18,36 +17,23 @@ export interface SharedFih {
 export interface FihPlacement { design: FihDesign; offset: number }
 export type FihSaveStatus = "local" | "saving" | "saved" | "offline" | "unavailable";
 
-function object(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
+export const parseSharedDesign = parseFihDesign;
 
-export function parseSharedDesign(value: unknown): FihDesign | null {
-  if (!object(value) ||
-      !FIH_PRESETS.some(({ id }) => id === value.shape) ||
-      !FIN_SHAPES.some(({ id }) => id === value.finShape) ||
-      !HEAD_SHAPES.some(({ id }) => id === value.headShape) ||
-      !isHexColor(value.color) ||
-      !(value.finColor == null || isHexColor(value.finColor)) ||
-      !(value.headColor == null || isHexColor(value.headColor)) ||
-      ![value.finSize, value.bodySize, value.headSize].every(isPartSize) ||
-      value.pattern !== "plain" || !Number.isInteger(value.count) ||
-      (value.count as number) < 1 || (value.count as number) > MAX_VISITOR_FIH) return null;
-  // Pick known fields; never forward arbitrary remote properties to rendering/storage.
+// Called on every transaction retry, including after another tab upgrades a save.
+export function createSharedFihRecord(current: unknown, design: FihDesign, timestamp: unknown) {
+  if (isRecord(current) && isRecord(current.design) &&
+      (hasUnsupportedDesignVersion(current.design) || !parseFihDesign(current.design))) {
+    throw new Error("This saved fih needs a newer app. Reload before updating it.");
+  }
   return {
-    shape: value.shape as FihDesign["shape"],
-    finShape: value.finShape as FihDesign["finShape"],
-    headShape: value.headShape as FihDesign["headShape"],
-    color: (value.color as string).toLowerCase(),
-    finColor: value.finColor == null ? null : (value.finColor as string).toLowerCase(),
-    headColor: value.headColor == null ? null : (value.headColor as string).toLowerCase(),
-    finSize: value.finSize as number, bodySize: value.bodySize as number,
-    headSize: value.headSize as number, pattern: "plain", count: value.count as number,
+    design: serializeFihDesign(design),
+    createdAt: isRecord(current) ? current.createdAt ?? timestamp : timestamp,
+    updatedAt: timestamp,
   };
 }
 
 export function parseSharedFih(ownerId: string, value: unknown): SharedFih | null {
-  if (!object(value) || !Number.isSafeInteger(value.createdAt) ||
+  if (!isRecord(value) || !Number.isSafeInteger(value.createdAt) ||
       !Number.isSafeInteger(value.updatedAt) || (value.createdAt as number) < 0 ||
       (value.updatedAt as number) < (value.createdAt as number)) return null;
   const design = parseSharedDesign(value.design);
@@ -64,5 +50,6 @@ export function selectSharedSchool(entries: readonly SharedFih[], own: FihDesign
     placements.push({ design: { ...entry.design, count: available }, offset: count });
     count += available;
   }
-  return { placements, count };
+  const backgroundCount = Math.min(INITIAL_FIH, MAX_FIH - count);
+  return { placements, count, backgroundCount, totalCount: count + backgroundCount };
 }

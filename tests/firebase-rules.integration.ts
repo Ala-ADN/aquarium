@@ -4,9 +4,10 @@ import { assertFails, assertSucceeds, initializeTestEnvironment } from "@firebas
 import type { RulesTestEnvironment } from "@firebase/rules-unit-testing";
 import { serverTimestamp } from "firebase/database";
 import { DEFAULT_APPEARANCE } from "../src/fih/appearance";
+import { serializeFihDesign } from "../src/fih/design";
 
 let env: RulesTestEnvironment;
-const design = { ...DEFAULT_APPEARANCE, count: 2 };
+const design = serializeFihDesign({ ...DEFAULT_APPEARANCE, count: 2 });
 const record = (change = {}) => ({ design: { ...design, ...change }, createdAt: serverTimestamp(), updatedAt: serverTimestamp() });
 const database = (uid?: string) => (uid ? env.authenticatedContext(uid) : env.unauthenticatedContext()).database();
 const seed = async (path: string, value: unknown) => {
@@ -68,7 +69,25 @@ describe("server-enforced fih ownership and concurrency", () => {
 });
 
 describe("server-enforced schema", () => {
+  it("upgrades an unversioned record without changing its creation timestamp", async () => {
+    const { schemaVersion: _, ...legacy } = design;
+    await seed("fih/alice", { design: legacy, createdAt: 1000, updatedAt: Date.now() - 20_000 });
+    const own = database("alice").ref("fih/alice");
+    await assertSucceeds(own.transaction((current) => ({ ...current, design, updatedAt: serverTimestamp() })));
+    expect((await own.get()).val().design.schemaVersion).toBe(1);
+    expect((await own.get()).val().createdAt).toBe(1000);
+  });
+  it("rejects old clients' unversioned writes and removing a stored version", async () => {
+    await assertFails(database("alice").ref("fih/alice").set(record({ schemaVersion: null })));
+    await seed("fih/alice", { ...record(), createdAt: 1000, updatedAt: Date.now() - 20_000 });
+    await assertFails(database("alice").ref("fih/alice").update({ "design/schemaVersion": null, updatedAt: serverTimestamp() }));
+  });
+  it("rejects downgrading a record written by a future client", async () => {
+    await seed("fih/alice", { ...record({ schemaVersion: 2 }), createdAt: 1000, updatedAt: Date.now() - 20_000 });
+    await assertFails(database("alice").ref("fih/alice").set({ ...record(), createdAt: 1000 }));
+  });
   it.each([
+    { schemaVersion: 0 }, { schemaVersion: 2 }, { schemaVersion: "1" },
     { count: 0 }, { count: 11 }, { count: 1.5 }, { count: "2" },
     { shape: "unknown" }, { finShape: "unknown" }, { headShape: "unknown" },
     { color: "red" }, { finColor: "#ffffff00" }, { headColor: 12 },

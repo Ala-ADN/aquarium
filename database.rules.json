@@ -20,7 +20,8 @@
           ".validate": "newData.isNumber() && newData.val() === now"
         },
         "design": {
-          ".validate": "newData.hasChildren(['shape', 'finShape', 'headShape', 'color', 'finSize', 'bodySize', 'headSize', 'pattern', 'count'])",
+          ".validate": "newData.hasChildren(['schemaVersion', 'shape', 'finShape', 'headShape', 'color', 'finSize', 'bodySize', 'headSize', 'pattern', 'count']) && (!data.child('schemaVersion').exists() || newData.child('schemaVersion').val() >= data.child('schemaVersion').val())",
+          "schemaVersion": { ".validate": "newData.val() === 1" },
           "shape": { ".validate": "newData.val() === 'classic' || newData.val() === 'round' || newData.val() === 'diamond' || newData.val() === 'sail'" },
           "finShape": { ".validate": "newData.val() === 'triangle' || newData.val() === 'fork' || newData.val() === 'fan' || newData.val() === 'ribbon'" },
           "headShape": { ".validate": "newData.val() === 'pointed' || newData.val() === 'round' || newData.val() === 'blunt'" },

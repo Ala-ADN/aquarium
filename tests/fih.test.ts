@@ -132,9 +132,9 @@ describe("visitor persistence and earning", () => {
     expect(parseVisit(encode({ ...DEFAULT_APPEARANCE, count: 2 }, 5000))?.fih).toBeNull();
   });
   it("falls back to legacy JSON when v3 is malformed and tolerates storage errors", () => {
-    expect(readVisit({ getItem: (key) => key === VISIT_STORAGE_KEY ? "broken" : key === PREVIOUS_STORAGE_KEY ? null : encode({ shape: "classic", color: "#ff9955", count: 1 }) }).fih?.count).toBe(1);
+    expect(readVisit({ getItem: (key) => key === VISIT_STORAGE_KEY ? "broken" : key === LEGACY_STORAGE_KEY ? encode({ shape: "classic", color: "#ff9955", count: 1 }) : null }).fih?.count).toBe(1);
     expect(readVisit({ getItem: () => { throw new Error("blocked"); } })).toEqual({ elapsed: 0, fih: null });
-    expect(saveVisit({ setItem: () => { throw new Error("quota"); } }, { elapsed: 10_000, fih: null })).toBe(false);
+    expect(saveVisit({ getItem: () => null, setItem: () => { throw new Error("quota"); } }, { elapsed: 10_000, fih: null })).toBe(false);
   });
   it("counts only visible time and caps the allowance at ten", () => {
     expect(advanceVisit(9000, 5000, false)).toBe(9000);
