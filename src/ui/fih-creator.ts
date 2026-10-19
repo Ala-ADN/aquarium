@@ -1,4 +1,4 @@
-import { FIH_INTERVAL_MS, MAX_VISITOR_FIH } from "../constants";
+import { DEFAULT_FIH_COLOR, FIH_INTERVAL_MS, MAX_VISITOR_FIH } from "../constants";
 import type {
   FihAppearance,
   FihDesign,
@@ -11,6 +11,7 @@ import { describeFih, FihDraft, partOptions, partShape, resolveFihColors } from 
 import { FIH_PARTS, MIN_PART_SIZE, MAX_PART_SIZE } from "../fih/parts";
 import { advanceVisit, earnedFih, readVisit, saveVisit } from "../fih/visit";
 import { drawFihPreview } from "./fih-preview";
+import { createFihFaviconUpdater } from "./fih-favicon";
 import { createWindow } from "./window";
 import { sampleFihSpin } from "./fih-spin";
 import { createFihReleaseFeedback } from "./fih-release";
@@ -37,7 +38,7 @@ function lane(part: FihPart) {
       <div class="fih-reel-item fih-reel-neighbor"><canvas data-offset="2"></canvas></div>
     </div></div>
     <button type="button" class="fih-reel-arrow" data-direction="1" aria-label="Next ${part} shape">▾</button>
-    <div class="fih-color-control"><input type="color" id="fih-${part}-picker" aria-label="Custom ${part} color" value="#ff9955"></div>
+    <div class="fih-color-control"><input type="color" id="fih-${part}-picker" aria-label="Custom ${part} color" value="${DEFAULT_FIH_COLOR}"></div>
     <input type="range" id="fih-${part}-size" aria-label="${part} size" min="${MIN_PART_SIZE}" max="${MAX_PART_SIZE}" step="0.05" value="1">
   </section>`;
 }
@@ -57,6 +58,7 @@ export function mountFihCreator(
   let elapsed = visit.elapsed;
   let released = visit.fih;
   const draft = new FihDraft(released ?? undefined);
+  const updateFavicon = createFihFaviconUpdater();
   let lastTick = performance.now();
   let wasVisible = !document.hidden;
   let reachedFooter = false;
@@ -250,6 +252,7 @@ export function mountFihCreator(
     if (livePreview) livePreview.update(draft.appearance);
     else drawFihPreview(preview, draft.appearance);
     drawFihPreview(miniature, draft.appearance);
+    updateFavicon(draft.appearance);
     const { fin, body, head } = resolveFihColors(draft.appearance);
     preview.setAttribute(
       "aria-label",

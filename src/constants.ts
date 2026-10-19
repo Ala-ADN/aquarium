@@ -9,7 +9,8 @@ export const BOUNDS_HALF = BOUNDS / 2;
 export const DEFAULT_FIN_SIZE = 2;
 export const FIH_INTERVAL_MS = 10_000;
 export const MAX_VISITOR_FIH = 10;
-export const DEFAULT_FIH_COLOR = "#ff9955";
+// sRGB midpoint of the seeded school's teal color variation.
+export const DEFAULT_FIH_COLOR = "#25a4aa";
 export const FIH_FIN_SHADE = 0.65;
 
 // Camera distance is in world units; FOV is in degrees.
