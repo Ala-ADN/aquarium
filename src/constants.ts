@@ -2,6 +2,8 @@ export const WIDTH = 32;
 // The simulation texture has 1024 slots; at most 1000 are visible.
 export const MAX_FIH = 1000;
 export const INITIAL_FIH = 30;
+// Time for newly loaded or released fih to become fully visible; 0 disables fading.
+export const FIH_FADE_IN_MS = 600;
 export const BOUNDS = 800;
 export const BOUNDS_HALF = BOUNDS / 2;
 export const DEFAULT_FIN_SIZE = 2;

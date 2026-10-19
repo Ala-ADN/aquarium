@@ -14,7 +14,7 @@ export interface SharedFih {
   design: FihDesign;
   updatedAt: number;
 }
-export interface FihPlacement { design: FihDesign; offset: number }
+export interface FihPlacement { ownerId: string; design: FihDesign; offset: number }
 export type FihSaveStatus = "local" | "saving" | "saved" | "offline" | "unavailable";
 
 export const parseSharedDesign = parseFihDesign;
@@ -47,7 +47,7 @@ export function selectSharedSchool(entries: readonly SharedFih[], own: FihDesign
     if (own && entry.ownerId === ownerId) continue;
     const available = Math.min(entry.design.count, MAX_FIH - count);
     if (available <= 0) break;
-    placements.push({ design: { ...entry.design, count: available }, offset: count });
+    placements.push({ ownerId: entry.ownerId, design: { ...entry.design, count: available }, offset: count });
     count += available;
   }
   const backgroundCount = Math.min(INITIAL_FIH, MAX_FIH - count);

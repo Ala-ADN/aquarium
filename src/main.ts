@@ -18,6 +18,7 @@ import {
   BACKGROUND_GRADIENT,
   CAMERA_SETTINGS,
   FIH_FIN_SHADE,
+  FIH_FADE_IN_MS,
   FIH_FLOCKING,
   INITIAL_FIH,
   MAX_RENDER_PIXEL_RATIO,
@@ -31,6 +32,10 @@ import { createSharedFihSync } from "./fih/shared-sync";
 import { readVisit } from "./fih/visit";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
+
+// Download the public reader while the graphics context is being created.
+const firebaseConfig = readFirebaseConfig(import.meta.env, import.meta.env.DEV);
+let firebaseModule = firebaseConfig ? import("./fih/firebase") : null;
 
 const scene = new Scene();
 scene.background = new Color(BACKGROUND_GRADIENT.deep);
@@ -49,6 +54,8 @@ const water = createWaterEnvironment(scene);
 water.resize(window.innerWidth, window.innerHeight, renderer.getPixelRatio());
 
 const geometry = new FihGeometry({}, INITIAL_FIH);
+let firstFrameAt: number | null = null;
+const fadeTime = () => firstFrameAt === null ? 0 : (performance.now() - firstFrameAt) / 1000;
 const fihUniforms = {
   ...water.uniforms,
   texturePosition: { value: gpuSim.getCurrentPositionTexture() },
@@ -60,6 +67,8 @@ const fihUniforms = {
   patternMask: { value: getPatternTexture("plain") },
   patternColor: { value: new Color() },
   releaseGlow: { value: 0 },
+  fadeTime: { value: 0 },
+  fadeDuration: { value: Math.max(0, FIH_FADE_IN_MS) / 1000 },
 };
 
 const fihMaterial = new ShaderMaterial({
@@ -67,6 +76,8 @@ const fihMaterial = new ShaderMaterial({
   vertexShader: fihVertexShader,
   fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
+  transparent: true,
+  depthWrite: false,
 });
 
 const fihMesh = new Mesh(geometry, fihMaterial);
@@ -83,6 +94,8 @@ const templateMaterial = () => new ShaderMaterial({
   vertexShader: fihVertexShader,
   fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
+  transparent: true,
+  depthWrite: false,
 });
 const visitorMaterial = templateMaterial();
 const sharedMaterial = templateMaterial();
@@ -104,6 +117,7 @@ let schoolFrame = 0;
 let sharing: ReturnType<typeof createSharedFihSync> | null = null;
 let backgroundOffset = 0;
 let backgroundCount = INITIAL_FIH;
+let sharedRevealTimes = new Map<string, number[]>();
 
 function refreshSchool() {
   const school = selectSharedSchool(sharedEntries, ownDesign, ownerId);
@@ -117,7 +131,15 @@ function refreshSchool() {
   const key = JSON.stringify(school.placements);
   if (key === schoolKey) return;
   schoolKey = key;
-  const pieces = school.placements.map(({ design, offset }) => new FihGeometry(fihTemplate(design), design.count, offset));
+  const now = fadeTime();
+  const nextRevealTimes = new Map<string, number[]>();
+  const pieces = school.placements.map(({ ownerId, design, offset }) => {
+    const previous = sharedRevealTimes.get(ownerId) ?? [];
+    const times = Array.from({ length: design.count }, (_, i) => previous[i] ?? now);
+    nextRevealTimes.set(ownerId, times);
+    return new FihGeometry(fihTemplate(design), design.count, offset, times);
+  });
+  sharedRevealTimes = nextRevealTimes;
   const merged = pieces.length ? mergeGeometries(pieces) : null;
   pieces.forEach((piece) => piece.dispose());
   sharedMesh.geometry.dispose();
@@ -135,7 +157,9 @@ function displayFih(design: FihDesign) {
   releasedAt = restoringVisit ? -Infinity : performance.now();
   const visitorGeometry = new FihGeometry(
     fihTemplate(design),
-    design.count
+    design.count,
+    0,
+    fadeTime()
   );
   if (visitorMesh) {
     visitorMesh.geometry.dispose();
@@ -202,13 +226,12 @@ async function loadEditor() {
 }
 
 // Loading Firebase never blocks the animation or browser-only persistence.
-const firebaseConfig = readFirebaseConfig(import.meta.env, import.meta.env.DEV);
 if (firebaseConfig) {
   type FirebaseClient = Awaited<ReturnType<typeof import("./fih/firebase")["connectFirebaseAquarium"]>>;
   let client: FirebaseClient | null = null;
   let connecting: Promise<FirebaseClient> | null = null;
   const connect = () => {
-    if (!connecting) connecting = import("./fih/firebase").then(({ connectFirebaseAquarium }) =>
+    if (!connecting) connecting = (firebaseModule ??= import("./fih/firebase")).then(({ connectFirebaseAquarium }) =>
       connectFirebaseAquarium(firebaseConfig, {
         onEntries: (entries) => { sharedEntries = entries; scheduleSchool(); },
         onOwner: (id) => { ownerId = id; scheduleSchool(); },
@@ -219,7 +242,7 @@ if (firebaseConfig) {
       client = connected;
       if (disposed) connected.close();
       return connected;
-    }).catch((error: unknown) => { connecting = null; throw error; });
+    }).catch((error: unknown) => { connecting = null; firebaseModule = null; throw error; });
     return connecting;
   };
   let storage: Storage | null = null;
@@ -275,6 +298,8 @@ let deferredWork: ReturnType<typeof setTimeout> | undefined;
 
 renderer.setAnimationLoop(() => {
   const now = performance.now();
+  firstFrameAt ??= now;
+  fihUniforms.fadeTime.value = (now - firstFrameAt) / 1000;
   let delta = (now - lastTime) / 1000;
   if (delta > 1) delta = 1; // safety cap on large deltas
   lastTime = now;

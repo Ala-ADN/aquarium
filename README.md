@@ -8,6 +8,10 @@ project, enable App Check, and configure Pages. Without Firebase configuration,
 the app keeps working with local saves. Run `pnpm test:rules` for the emulator
 security tests (Java 21+ required).
 
+The GitHub Pages workflow publishes the website only. When the saved design
+format or database rules change, deploy the matching Firebase rules **before**
+publishing the client: `pnpm deploy:database --project YOUR_PROJECT_ID`.
+
 The wide fih window lives in the footer, after the space reserved for experience
 and project windows. Visitors earn one fih every 10 seconds with the page visible,
 capped at 10. Reaching the footer lets them release their full earned swarm.
@@ -65,6 +69,10 @@ The first frame uses seeded position/velocity textures before initializing GPU
 simulation. The creator and its window styles load after the first tank frame;
 its preview creates a WebGL context only when visible. Saved fih restore before
 the creator loads. Debug controls download only on **Space** or with `?debug`.
+The shared reader downloads in parallel with graphics setup. Public reads finish
+before Auth is loaded to restore identity; explicit releases still await Auth.
+Initial child events are published as one complete feed, including empty tanks.
+See the [fetching benchmark](benchmarks/README.md) for measured p95 and reproduction.
 
 Released designs and earned time are saved as `aquarium.visitor.v4`, with explicit
 versions for the visit and design. Older v1/v2/v3 saves migrate without deleting

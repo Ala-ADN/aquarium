@@ -24,7 +24,7 @@ function legacyTriangles(template: Partial<FihTemplate>): FihTriangle[] {
 }
 
 export class FihGeometry extends BufferGeometry {
-  constructor(template: Partial<FihTemplate> = {}, count = MAX_FIH, offset = 0) {
+  constructor(template: Partial<FihTemplate> = {}, count = MAX_FIH, offset = 0, revealedAt: number | readonly number[] = 0) {
     super();
     const triangles = template.finShape || template.headShape ? createFihParts(template) : legacyTriangles(template);
     const pointsPerFih = triangles.length * 3;
@@ -36,6 +36,7 @@ export class FihGeometry extends BufferGeometry {
     const part = new BufferAttribute(new Float32Array(points), 1);
     const tailWeight = new BufferAttribute(new Float32Array(points), 1);
     const uv = new BufferAttribute(new Float32Array(points * 2), 2);
+    const revealTimes = new BufferAttribute(new Float32Array(points), 1);
     const body = new Color(template.bodyColor ?? 0x666666);
     const fin = new Color(template.finColor ?? 0x888888);
     const head = new Color(template.headColor ?? body);
@@ -51,6 +52,7 @@ export class FihGeometry extends BufferGeometry {
           const i = fish * pointsPerFih + local;
           vertices.setXYZ(i, 0, y, z);
           colors.setXYZ(i, color.r, color.g, color.b);
+          revealTimes.setX(i, typeof revealedAt === "number" ? revealedAt : revealedAt[fish] ?? 0);
           const slot = fish + offset;
           references.setXY(i, ((slot % WIDTH) + .5) / WIDTH, (Math.floor(slot / WIDTH) + .5) / WIDTH);
           localVertex.setX(i, local++);
@@ -67,6 +69,7 @@ export class FihGeometry extends BufferGeometry {
     this.setAttribute("fihPart", part);
     this.setAttribute("tailWeight", tailWeight);
     this.setAttribute("bodyUv", uv);
+    this.setAttribute("revealedAt", revealTimes);
     this.scale(.2 * (template.scale ?? 1), .2 * (template.scale ?? 1), .2 * (template.scale ?? 1));
   }
 }

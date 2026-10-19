@@ -3,6 +3,10 @@ attribute float fihPart;
 attribute float tailWeight;
 attribute vec3 fihColor;
 attribute vec2 bodyUv;
+attribute float revealedAt;
+uniform float fadeTime;
+uniform float fadeDuration;
+varying float vFade;
 varying vec2 vBodyUv;
 uniform sampler2D texturePosition;
 uniform sampler2D textureVelocity;
@@ -14,6 +18,7 @@ uniform float time;
 varying float vColorVariation;
 
 void main() {
+    vFade = fadeDuration > 0.0 ? smoothstep(0.0, fadeDuration, max(0.0, fadeTime - revealedAt)) : 1.0;
     vBodyUv = bodyUv;
 	vColorVariation = fract(sin(dot(reference, vec2(127.1, 311.7))) * 43758.5453);
 	vec4 tmpPos = texture2D( texturePosition, reference );

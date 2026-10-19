@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "test": "vitest run",
-    "test:rules": "firebase emulators:exec --project demo-aquarium --only database \"vitest run --config vitest.rules.config.ts\"",
+    "test:rules": "firebase emulators:exec --project demo-aquarium --only auth,database \"vitest run --config vitest.rules.config.ts\"",
+    "deploy:database": "firebase deploy --only database",
     "emulators": "firebase emulators:start --project demo-aquarium --only auth,database",
     "dev": "vite",
     "build": "tsc && vite build",

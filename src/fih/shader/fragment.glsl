@@ -1,4 +1,5 @@
 varying vec4 vColor;
+varying float vFade;
 varying float vViewDepth;
 varying float vBodyHeight;
 varying float vFin;
@@ -35,6 +36,6 @@ void main() {
     float fog = smoothstep(fishFog.x, fishFog.y, vViewDepth);
     color = mix(color, waterColor(screenUv), fog);
 
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, vFade);
     #include <colorspace_fragment>
 }
