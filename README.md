@@ -13,13 +13,16 @@ format or database rules change, deploy the matching Firebase rules **before**
 publishing the client: `pnpm deploy:database --project YOUR_PROJECT_ID`.
 
 The wide fih window lives in the footer, after the space reserved for experience
-and project windows. Visitors earn one fih every 10 seconds with the page visible,
-capped at 10. Reaching the footer lets them release their full earned swarm.
+and project windows. With the page visible, visitors earn fih according to
+`f(x) = 1 + 9 * sqrt(x / 200)`, where x is seconds, capped at 10 after 200 seconds.
+Reaching the footer lets them release the whole-number portion of their allowance.
 
 The creator places a **4:3 preview on the left** and three narrow **fin**, **body**,
 and **head** slots in one recessed control panel on the right. The full-width
 **spin all** button sits below the reels, with wide color swatches in each lane.
-The progress bar and release button share a compact footer row. Scroll over a
+The time-spent line, save status, and release button share a compact footer row.
+Save messages appear immediately left of the button; release/update also retries
+failed sharing, without a separate retry button. Scroll over a
 slot to cycle its shape; small trackpad movements accumulate. The window keeps
 tilting while hovering or editing the slots. Wheel events take priority over page
 scrolling, including when a 3D hit lands on the window behind the slot. Clicks
@@ -39,10 +42,10 @@ the design to the full earned swarm immediately and plays a swim-out animation
 with a ripple at the preview opening. The preview returns ready for editing; edits
 or another spin cancel the effect. Unreleased edits are not saved.
 
-The count is shown as a 7.css progress bar with “you spent X seconds here,
-thanks, you get to add10” and a miniature of the current fish displayed beside it.
-The miniature follows shape, color, and size edits. Visible visit time keeps counting after all 10 fih are
-earned, while the bar stays full.
+The count is shown as “you spent X seconds here, thanks, you get X” followed
+by a miniature of the current fish. The earned count includes its full fractional
+value without rounding and becomes “max” at 10. The miniature follows shape,
+color, and size edits. Visible visit time keeps counting after all 10 fih are earned.
 
 The body slot offers classic, chubby, diamond, and sailfin shapes; the
 head slot offers pointed, rounded, and blunt shapes. Saved tiny bodies become
@@ -85,8 +88,9 @@ three part columns remain side by side on mobile, with the 4:3 preview above the
 
 Window motion follows commit `1ff0969` and remains active over the slot controls.
 Customization keeps its form and
-layout containers in the shared 3D context. Read-only artwork and text use depth;
-native controls stay at zero depth. Only each reel clips its own contents.
+layout containers in the shared 3D context. The slots rest at zero depth, with
+both spin and submit buttons at 40px depth. Slot spin animations
+add lift above the resting depth. Only each reel clips its own contents.
 The fish preview floats at 40px depth, above the frame; read-only window text
 uses independent depths. Window width and reel height
 adapt to viewport height, and the preview retains its 4:3 frame.
@@ -132,6 +136,9 @@ Drag the title bar, or focus it and use arrow keys. Enter/Home resets its positi
 Mouse movement across the page tilts and shifts visible windows. Dragging and
 tilting ease toward their targets with a spring. Adjust `WINDOW_MOTION` in
 `src/constants.ts` for spring speed, drag speed, tilt, parallax, and keyboard steps.
+Pointer movement and slot hover bounds checks run at most once per animation
+frame. Motion writes transforms directly on the window and its surface, avoiding
+inherited per-frame CSS variables that recalculate styles throughout the editor.
 
 Set `--window-depth` on any element inside a window to choose its height:
 
@@ -149,5 +156,5 @@ zero and does not inherit. Keep containers at zero for heights relative to the
 window; raising a container adds its height to its children. Fih UI depths live
 in `src/style.css`. Avoid clipping (`overflow: hidden`) on containers with raised
 children, because it flattens their 3D layers.
-Keep interactive controls at zero depth and disable pointer events on raised
-decorative layers so they cannot obscure the controls beneath them.
+Disable pointer events on raised decorative layers so they cannot obscure
+the controls beneath them.

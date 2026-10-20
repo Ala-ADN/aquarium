@@ -1,4 +1,4 @@
-import { FIH_INTERVAL_MS, MAX_VISITOR_FIH } from "../constants";
+import { FIH_EARNING_DURATION_MS, MAX_VISITOR_FIH } from "../constants";
 import type { FihDesign } from "../types";
 import { isProtectedFihDesign, isRecord, migrateLegacyFihDesign, parseFihDesign, serializeFihDesign } from "./design";
 
@@ -8,9 +8,12 @@ export const V3_STORAGE_KEY = "aquarium.visitor.v3";
 export const PREVIOUS_STORAGE_KEY = "aquarium.visitor.v2";
 export const LEGACY_STORAGE_KEY = "aquarium.visitor.v1";
 export const VISIT_SCHEMA_VERSION = 1;
-export const MAX_VISIT_TIME = MAX_VISITOR_FIH * FIH_INTERVAL_MS;
+export const MAX_VISIT_TIME = FIH_EARNING_DURATION_MS;
 export interface FihVisit { elapsed: number; fih: FihDesign | null }
-export const earnedFih = (elapsed: number) => Math.min(MAX_VISITOR_FIH, Math.floor(elapsed / FIH_INTERVAL_MS));
+// elapsed is in milliseconds; the displayed allowance keeps its fractional value.
+export const fihAllowance = (elapsed: number) => Math.min(MAX_VISITOR_FIH,
+  1 + (MAX_VISITOR_FIH - 1) * Math.sqrt(Math.max(0, elapsed) / FIH_EARNING_DURATION_MS));
+export const earnedFih = (elapsed: number) => Math.floor(fihAllowance(elapsed));
 export function advanceVisit(elapsed: number, delta: number, visible: boolean) {
   return elapsed + (visible ? Math.max(0, delta) : 0);
 }

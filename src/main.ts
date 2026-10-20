@@ -179,7 +179,7 @@ const debug = new URLSearchParams(window.location.search).has("debug");
 let debugPanel: ReturnType<typeof import("./ui/debug-panel")["createDebugPanel"]> | null = null;
 let debugLoading: Promise<void> | null = null;
 let creator: ReturnType<typeof import("./ui/fih-editor")["mountFihEditor"]> | null = null;
-let saveStatus: { status: FihSaveStatus; retryable: boolean } | null = null;
+let saveStatus: FihSaveStatus | null = null;
 let disposed = false;
 
 const effectController = {
@@ -195,9 +195,9 @@ try {
   if (saved) displayFih(saved);
 } catch { /* The tank still starts when browser storage is unavailable. */ }
 
-function setSaveStatus(status: FihSaveStatus, retryable = true) {
-  saveStatus = { status, retryable };
-  creator?.setSaveStatus(status, retryable);
+function setSaveStatus(status: FihSaveStatus) {
+  saveStatus = status;
+  creator?.setSaveStatus(status);
 }
 
 async function loadEditor() {
@@ -208,10 +208,9 @@ async function loadEditor() {
       onDisplay: displayFih, water: water.uniforms,
       isPaused: () => effectController.paused,
       onRelease: (design) => sharing?.submit(design),
-      onRetry: () => sharing?.retry(),
     });
     restoringVisit = false;
-    if (saveStatus) creator.setSaveStatus(saveStatus.status, saveStatus.retryable);
+    if (saveStatus) creator.setSaveStatus(saveStatus);
   } catch {
     if (disposed) return;
     const retry = document.createElement("button");
@@ -235,7 +234,7 @@ if (firebaseConfig) {
       connectFirebaseAquarium(firebaseConfig, {
         onEntries: (entries) => { sharedEntries = entries; scheduleSchool(); },
         onOwner: (id) => { ownerId = id; scheduleSchool(); },
-        onError: () => setSaveStatus("unavailable", false),
+        onError: () => setSaveStatus("unavailable"),
         onConnected: () => sharing?.retry(),
       })
     ).then((connected) => {
@@ -254,7 +253,7 @@ if (firebaseConfig) {
   });
   const reconnect = () => sharing?.retry();
   window.addEventListener("online", reconnect);
-  void connect().catch(() => setSaveStatus("unavailable", false));
+  void connect().catch(() => setSaveStatus("unavailable"));
   sharing.retry();
   import.meta.hot?.dispose(() => {
     disposed = true;

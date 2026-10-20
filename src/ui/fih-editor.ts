@@ -9,7 +9,6 @@ export function mountFihEditor(options: {
   water: ReturnType<typeof createWaterEnvironment>["uniforms"];
   isPaused: () => boolean;
   onRelease: (design: FihDesign) => void;
-  onRetry: () => void;
 }) {
   return mountFihCreator(options.onDisplay,
     (canvas, appearance) => createFihLivePreview(canvas, appearance, options), options);

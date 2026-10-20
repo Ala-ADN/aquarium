@@ -44,7 +44,29 @@ export function createWindow(title: string, content: HTMLElement) {
   let lastFrame = 0;
   let positionSpeed: number = MOTION_SPEED;
   let drag: { id: number; startX: number; startY: number; x: number; y: number } | null = null;
+  let pendingPointer: { x: number; y: number; id: number } | null = null;
+  function applyPointer() {
+    const pointer = pendingPointer;
+    pendingPointer = null;
+    if (!pointer) return;
+    if (drag) {
+      if (pointer.id === drag.id)
+        move(drag.x + pointer.x - drag.startX, drag.y + pointer.y - drag.startY);
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    if (!rect.width || !rect.height || rect.bottom < 0 || rect.top > innerHeight) {
+      motion.rx.target = motion.ry.target = 0;
+      return;
+    }
+    const px = Math.max(-1, Math.min(1, ((pointer.x - rect.left) / rect.width) * 2 - 1));
+    const py = Math.max(-1, Math.min(1, ((pointer.y - rect.top) / rect.height) * 2 - 1));
+    motion.rx.target = -py * WINDOW_MOTION.tilt;
+    motion.ry.target = px * WINDOW_MOTION.tilt;
+  }
   function animate(now: number) {
+    // Read geometry once per frame, before applying any transform writes.
+    applyPointer();
     const dt = Math.min((now - lastFrame) / 1000, 0.05);
     lastFrame = now;
     let moving = false;
@@ -66,12 +88,11 @@ export function createWindow(title: string, content: HTMLElement) {
     y = motion.y.value;
     const rx = motion.rx.value;
     const ry = motion.ry.value;
-    element.style.setProperty("--window-x", `${x}px`);
-    element.style.setProperty("--window-y", `${y}px`);
-    element.style.setProperty("--window-rx", `${rx}deg`);
-    element.style.setProperty("--window-ry", `${ry}deg`);
-    element.style.setProperty("--window-parallax-x", `${-ry * WINDOW_MOTION.parallax}px`);
-    element.style.setProperty("--window-parallax-y", `${rx * WINDOW_MOTION.parallax}px`);
+    // Inherited custom properties would invalidate styles throughout the content.
+    const position = `${x}px ${y}px`;
+    const transform = `perspective(1000px) translate3d(${-ry * WINDOW_MOTION.parallax}px, ${rx * WINDOW_MOTION.parallax}px, 0) rotateX(${rx}deg) rotateY(${ry}deg)`;
+    if (element.style.translate !== position) element.style.translate = position;
+    if (surface.style.transform !== transform) surface.style.transform = transform;
     frame = moving ? requestAnimationFrame(animate) : 0;
   }
 
@@ -111,6 +132,7 @@ export function createWindow(title: string, content: HTMLElement) {
     (event) => {
       if (!event.isPrimary || event.button !== 0 || drag) return;
       event.preventDefault();
+      pendingPointer = null;
       handle.focus({ preventScroll: true });
       for (const axis of axes) {
         motion[axis].target = motion[axis].value;
@@ -126,26 +148,16 @@ export function createWindow(title: string, content: HTMLElement) {
   window.addEventListener(
     "pointermove",
     (event) => {
-      if (drag) {
-        if (event.pointerId === drag.id)
-          move(drag.x + event.clientX - drag.startX, drag.y + event.clientY - drag.startY);
-        return;
-      }
-      if (event.pointerType === "touch") return;
-      const rect = element.getBoundingClientRect();
-      if (rect.bottom < 0 || rect.top > innerHeight) {
-        tilt();
-        return;
-      }
-      const px = Math.max(-1, Math.min(1, ((event.clientX - rect.left) / rect.width) * 2 - 1));
-      const py = Math.max(-1, Math.min(1, ((event.clientY - rect.top) / rect.height) * 2 - 1));
-      tilt(-py * WINDOW_MOTION.tilt, px * WINDOW_MOTION.tilt);
+      if (drag ? event.pointerId !== drag.id : event.pointerType === "touch") return;
+      pendingPointer = { x: event.clientX, y: event.clientY, id: event.pointerId };
+      schedule();
     },
     options
   );
 
   const stopDrag = (event: PointerEvent) => {
     if (drag?.id !== event.pointerId) return;
+    applyPointer();
     drag = null;
     delete element.dataset.dragging;
   };
@@ -164,6 +176,7 @@ export function createWindow(title: string, content: HTMLElement) {
       const step = directions[event.key];
       if (!step && !["Enter", "Home", " "].includes(event.key)) return;
       event.preventDefault();
+      pendingPointer = null;
       tilt();
       if (step) move(motion.x.target + step[0], motion.y.target + step[1]);
       else place(0, 0);
@@ -173,6 +186,7 @@ export function createWindow(title: string, content: HTMLElement) {
   window.addEventListener(
     "resize",
     () => {
+      pendingPointer = null;
       place(0, 0);
       tilt();
     },
@@ -183,6 +197,7 @@ export function createWindow(title: string, content: HTMLElement) {
     element,
     destroy() {
       cancelAnimationFrame(frame);
+      pendingPointer = null;
       events.abort();
       element.remove();
     },

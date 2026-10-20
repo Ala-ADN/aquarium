@@ -70,27 +70,31 @@ afterEach(() => {
 });
 
 describe("three-lane creator", () => {
-  it("shares only explicit releases and keeps retry separate from releasing", () => {
+  it("retries sharing through update and shows the save status immediately to its left", () => {
     const saved = { ...DEFAULT_APPEARANCE, count: 2 };
     localStorage.setItem(VISIT_STORAGE_KEY, JSON.stringify({ elapsed: 20_000, fih: saved }));
     const display = vi.fn();
     const onRelease = vi.fn();
-    const onRetry = vi.fn();
-    creator = mountFihCreator(display, undefined, { onRelease, onRetry });
+    creator = mountFihCreator(display, undefined, { onRelease });
+    const status = find(".fih-save-status");
+    expect(status.hidden).toBe(true);
+    expect(status.nextElementSibling).toBe(find(".fih-release"));
+    expect(document.querySelector(".fih-save-retry")).toBeNull();
     expect(display).toHaveBeenCalledWith(saved);
     expect(onRelease).not.toHaveBeenCalled();
     reel("body").focus();
     submit();
-    expect(onRelease).toHaveBeenCalledWith(saved);
+    expect(onRelease).toHaveBeenCalledWith({ ...saved, count: 3 });
     creator.setSaveStatus("saving");
-    expect(find(".fih-save-status").textContent).toBe("Sharing your fih…");
-    expect(find<HTMLButtonElement>(".fih-save-retry").hidden).toBe(true);
+    expect(find(".fih-save-status").textContent).toBe("sharing…");
+    expect(status.hidden).toBe(false);
     creator.setSaveStatus("unavailable");
-    find<HTMLButtonElement>(".fih-save-retry").click();
-    expect(onRetry).toHaveBeenCalledOnce();
     expect(onRelease).toHaveBeenCalledOnce();
+    submit();
+    expect(onRelease).toHaveBeenCalledTimes(2);
+    expect(onRelease).toHaveBeenLastCalledWith({ ...saved, count: 3 });
     creator.setSaveStatus("saved");
-    expect(find(".fih-save-status").textContent).toBe("Saved to the shared aquarium.");
+    expect(find(".fih-save-status").textContent).toBe("shared");
   });
   it("offers three independently selectable parts and releases only on submit", () => {
     const display = vi.fn();
@@ -124,7 +128,7 @@ describe("three-lane creator", () => {
       finSize: 1.25,
       bodySize: 0.8,
       headSize: 1.4,
-      count: 1,
+      count: 3,
     });
     expect(find(".fih-release").textContent).toBe("update");
     const saved = JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih;
@@ -166,42 +170,39 @@ describe("three-lane creator", () => {
     reel("body").focus();
     submit();
     expect(display).toHaveBeenCalledOnce();
-    expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih.count).toBe(1);
+    expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih.count).toBe(3);
     expect(animate).toHaveBeenCalledTimes(2);
     expect(find(".fih-preview").hasAttribute("data-releasing")).toBe(true);
     inputValue("#fih-head-size", "1.25");
     expect(find(".fih-preview").hasAttribute("data-releasing")).toBe(false);
     expect(cancel).toHaveBeenCalledTimes(2);
   });
-  it("shows the time-spent message beside the progress bar and keeps it updated after the bar fills", () => {
+  it("replaces the progress bar with time spent and an unrounded earned count that caps at ten", () => {
     creator = mountFihCreator(vi.fn());
-    const progress = find("#fih-count");
-    const fill = find("#fih-count > div");
+    const count = find("#fih-count");
     const text = find(".fih-progress-text");
     const message = find(".fih-progress-message");
-    expect(find(".fih-progress-reward").textContent).toBe("you get to add 10 fih");
-    expect(text.querySelector("canvas")).not.toBeNull();
-    expect(text.parentElement).toBe(progress.parentElement);
-    expect(progress.contains(text)).toBe(false);
-    expect(progress.getAttribute("role")).toBe("progressbar");
-    expect(progress.getAttribute("aria-valuemax")).toBe("10");
-    expect(message.textContent).toBe("you spent 0 seconds here, thanks,");
-    expect(progress.hasAttribute("title")).toBe(false);
-    expect(fill.style.width).toBe("0%");
+    expect(document.querySelector('[role="progressbar"]')).toBeNull();
+    expect(text.textContent).toBe("you spent 0 seconds here, thanks, you get 1 fih");
+    expect(text.hasAttribute("aria-hidden")).toBe(false);
+    expect(text.querySelector("canvas")?.getAttribute("aria-label")).toBe("fih");
+    expect(text.parentElement).toBe(find(".fih-release").parentElement);
     vi.advanceTimersByTime(15_000);
     expect(message.textContent).toBe("you spent 15 seconds here, thanks,");
-    expect(progress.getAttribute("aria-valuetext")).toBe(
-      "1 of 10 fih earned. you spent 15 seconds here, thanks, you get to add 10 fih."
-    );
-    expect(fill.style.width).toBe("15%");
+    expect(count.textContent).toBe("3.4647515087732472");
+    vi.advanceTimersByTime(123);
+    document.dispatchEvent(new Event("visibilitychange"));
+    expect(count.textContent).toBe("3.4748363582265394");
     vi.advanceTimersByTime(110_000);
-    expect(fill.style.width).toBe("100%");
-    expect(progress.getAttribute("aria-valuenow")).toBe("10");
+    expect(Number(count.textContent)).toBeLessThan(10);
     expect(message.textContent).toBe("you spent 125 seconds here, thanks,");
-    expect(progress.hasAttribute("title")).toBe(false);
+    vi.advanceTimersByTime(75_000);
+    expect(count.textContent).toBe("MAX");
+    expect(message.textContent).toBe("you spent 200 seconds here, thanks,");
     creator.destroy();
     creator = mountFihCreator(vi.fn());
-    expect(find(".fih-progress-message").textContent).toBe("you spent 125 seconds here, thanks,");
+    expect(find(".fih-progress-message").textContent).toBe("you spent 200 seconds here, thanks,");
+    expect(find("#fih-count").textContent).toBe("MAX");
   });
   it("wraps individual reels without changing the other columns", () => {
     creator = mountFihCreator(vi.fn());
@@ -420,7 +421,7 @@ describe("three-lane creator", () => {
     );
     submit();
     expect(display).toHaveBeenCalledTimes(1);
-    expect(find(".fih-spin-status").textContent).toContain("Browser saving is unavailable");
+    expect(find(".fih-spin-status").textContent).toBe("can't save here");
   });
   it("does not earn in a hidden tab and caps release at ten", () => {
     let hidden = false;
@@ -431,11 +432,11 @@ describe("three-lane creator", () => {
     hidden = true;
     document.dispatchEvent(new Event("visibilitychange"));
     vi.advanceTimersByTime(30_000);
-    expect(find("#fih-count").getAttribute("aria-valuenow")).toBe("0.5");
+    expect(find("#fih-count").textContent).toBe("2.4230249470757705");
     hidden = false;
     document.dispatchEvent(new Event("visibilitychange"));
     vi.advanceTimersByTime(5000);
-    expect(find("#fih-count").getAttribute("aria-valuenow")).toBe("1");
+    expect(find("#fih-count").textContent).toBe("3.0124611797498106");
     vi.advanceTimersByTime(200_000);
     reel("body").focus();
     submit();
@@ -595,7 +596,7 @@ describe("three-lane creator", () => {
     expect(requestSubmit).toHaveBeenCalledOnce();
     expect(display).toHaveBeenCalledOnce();
     expect(release.textContent).toBe("update");
-    expect(display.mock.lastCall?.[0].count).toBe(1);
+    expect(display.mock.lastCall?.[0].count).toBe(3);
   });
   it("updates and disposes the live preview with the draft", () => {
     const live = { update: vi.fn(), resize: vi.fn(), destroy: vi.fn() };

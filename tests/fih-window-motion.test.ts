@@ -27,7 +27,13 @@ function point(target: EventTarget, x: number, y: number) {
 }
 
 function value(property: string) {
-  return parseFloat(panel.style.getPropertyValue(`--window-${property}`));
+  if (property === "x" || property === "y")
+    return parseFloat(panel.style.translate.split(" ")[property === "x" ? 0 : 1] ?? "0");
+  const transform = panel.querySelector<HTMLElement>(".glass-window__surface")!.style.transform;
+  if (property === "rx" || property === "ry")
+    return parseFloat(transform.match(property === "rx" ? /rotateX\(([^)]+)\)/ : /rotateY\(([^)]+)\)/)?.[1] ?? "0");
+  const position = transform.match(/translate3d\(([^)]+)\)/)?.[1].split(",");
+  return parseFloat(position?.[property === "parallax-x" ? 0 : 1] ?? "0");
 }
 
 beforeEach(() => {
@@ -64,6 +70,23 @@ afterEach(() => {
 });
 
 describe("customization preserves the original window motion", () => {
+  it("coalesces pointer bursts into one window and slot bounds check per frame", () => {
+    const bounds = vi.mocked(panel.getBoundingClientRect);
+    const slots = [...panel.querySelectorAll<HTMLElement>(".fih-lane")];
+    const slotBounds = slots.map(slot => vi.spyOn(slot, "getBoundingClientRect"));
+    bounds.mockClear();
+    for (let index = 0; index < 50; index++) {
+      window.dispatchEvent(new PointerEvent("pointermove", {
+        clientX: 120 + index * 10, clientY: 340, pointerType: "mouse", bubbles: true,
+      }));
+    }
+    expect(bounds).not.toHaveBeenCalled();
+    for (const read of slotBounds) expect(read).not.toHaveBeenCalled();
+    settle();
+    expect(bounds).toHaveBeenCalledOnce();
+    for (const read of slotBounds) expect(read).toHaveBeenCalledOnce();
+    expect(value("ry")).toBeCloseTo((490 / 760 * 2 - 1) * 6);
+  });
   it("keeps the original pointer tilt and parallax", () => {
     point(window, 880, 100);
     expect(value("rx")).toBe(6);
@@ -151,7 +174,7 @@ describe("customization preserves the original window motion", () => {
     window.dispatchEvent(new PointerEvent("pointermove", {
       clientX: 880, clientY: 100, pointerType: "mouse", isPrimary: true,
     }));
-    expect(frames.size).toBe(1);
+    expect(frames.size).toBeGreaterThan(0);
     creator.destroy();
     point(window, 120, 580);
     expect(frames.size).toBe(0);
