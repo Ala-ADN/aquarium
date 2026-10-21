@@ -179,6 +179,7 @@ const debug = new URLSearchParams(window.location.search).has("debug");
 let debugPanel: ReturnType<typeof import("./ui/debug-panel")["createDebugPanel"]> | null = null;
 let debugLoading: Promise<void> | null = null;
 let creator: ReturnType<typeof import("./ui/fih-editor")["mountFihEditor"]> | null = null;
+let mediaPlayer: ReturnType<typeof import("./ui/media-player")["mountMediaPlayer"]> | null = null;
 let saveStatus: FihSaveStatus | null = null;
 let disposed = false;
 
@@ -221,6 +222,24 @@ async function loadEditor() {
     // the old chunk URL. Reload the entry document to recover in either case.
     retry.addEventListener("click", () => window.location.reload(), { once: true });
     document.querySelector("#fih-footer")?.replaceChildren(retry);
+  }
+}
+
+async function loadMediaPlayer() {
+  const host = document.querySelector<HTMLElement>("#portfolio-content");
+  if (!host) return;
+  try {
+    const { mountMediaPlayer } = await import("./ui/media-player");
+    if (!disposed) mediaPlayer = mountMediaPlayer(host);
+  } catch {
+    if (disposed) return;
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.className = "media-player-retry";
+    retry.style.pointerEvents = "auto";
+    retry.textContent = "Retry loading media player";
+    retry.addEventListener("click", () => window.location.reload(), { once: true });
+    host.append(retry);
   }
 }
 
@@ -344,6 +363,7 @@ renderer.setAnimationLoop(() => {
       deferredWork = setTimeout(() => {
         if (disposed) return;
         void loadEditor();
+        void loadMediaPlayer();
         if (debug || effectController.paused) void loadDebug();
       }, 0);
     });
@@ -355,6 +375,7 @@ import.meta.hot?.dispose(() => {
   cancelAnimationFrame(deferredFrame);
   clearTimeout(deferredWork);
   creator?.destroy();
+  mediaPlayer?.destroy();
   debugPanel?.destroy();
   renderer.setAnimationLoop(null);
 });

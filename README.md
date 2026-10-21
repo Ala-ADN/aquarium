@@ -8,6 +8,38 @@ project, enable App Check, and configure Pages. Without Firebase configuration,
 the app keeps working with local saves. Run `pnpm test:rules` for the emulator
 security tests (Java 21+ required).
 
+The desktop opens a classic VLC-style media player. Its cone and toolbar use the
+original VideoLAN artwork; source and license notices live in `src/asset/vlc`
+and are published in `public/licenses/vlc`. Its playlist contains the portfolio's
+project demos. The **GitHub ↗** button opens the selected project's `sourceUrl`
+repository in a new tab; it is disabled when no repository is supplied. The
+desktop cone reopens a minimized or closed player. The title bar supports dragging,
+double-click to maximize, and the original window tilt. The toolbar's buttons
+float at the same 30px depth as the fish creator's Spin and Update buttons.
+Volume, the seek slider, and the menus sit on the window surface. Playback
+controls are ordered Previous, Play/Pause, Next.
+Help → Donate to VLC opens https://www.videolan.org/contribute.html in a new tab.
+
+To publish project demos, place compressed exports and posters in
+`public/media/project-name/` and add entries to `src/media/library.ts`:
+
+```ts
+{ id: "project-name", title: "Project name", src: "media/project-name/demo.mp4",
+  poster: "media/project-name/poster.webp", projectUrl: "https://example.com",
+  sourceUrl: "https://github.com/your-name/project-name" }
+```
+
+Only the selected poster loads initially; a video's URL is attached on playback.
+Other playlist entries do not fetch video data or metadata. Media paths respect
+Vite's base URL for GitHub Pages. Keep original recordings outside the repository.
+The player remains on its cone screen until demos are added. Playback proceeds
+through the projects in order and stops at the end. It pauses when minimized,
+closed, scrolled out of view, or the browser tab is hidden.
+Space toggles playback while the player is focused; Left/Right seek, M mutes,
+and Ctrl+L opens the playlist. N/P select the next/previous
+project, +/- adjust speed, and Ctrl+I opens media information. The footer fish
+creator remains independently available.
+
 The GitHub Pages workflow publishes the website only. When the saved design
 format or database rules change, deploy the matching Firebase rules **before**
 publishing the client: `pnpm deploy:database --project YOUR_PROJECT_ID`.
@@ -151,7 +183,7 @@ Set `--window-depth` on any element inside a window to choose its height:
 }
 ```
 
-Or use `style="--window-depth: 40px"` on an individual element. Depth defaults to
+Or use `style="--window-depth: 30px"` on an individual element. Depth defaults to
 zero and does not inherit. Keep containers at zero for heights relative to the
 window; raising a container adds its height to its children. Fih UI depths live
 in `src/style.css`. Avoid clipping (`overflow: hidden`) on containers with raised

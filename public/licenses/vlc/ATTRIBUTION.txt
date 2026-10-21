@@ -1,0 +1,17 @@
+Classic VLC artwork
+
+Cone and toolbar artwork from VideoLAN's VLC 2.2 source repository.
+Files are reproduced unmodified.
+
+Upstream source (with original copyright and license notices):
+https://github.com/videolan/vlc-2.2/tree/91767ab580fbfce5e1ff7ac5b11648325834a6e4
+
+Cone: share/icons/128x128/vlc.png and share/icons/32x32/vlc.png
+Controls: modules/gui/qt4/pixmaps, pixmaps/toolbar, and pixmaps/playlist
+
+Upstream license texts are provided alongside this notice:
+COPYING.txt (GPL version 2)
+COPYING.LIB.txt (LGPL version 2.1)
+
+The portfolio player is an independent browser implementation,
+not the VLC application. VLC and VideoLAN belong to their respective owners.

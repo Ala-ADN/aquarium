@@ -170,6 +170,20 @@ describe("customization preserves the original window motion", () => {
     expect(value("ry")).toBe(0);
   });
 
+  it("keeps motion bounded when a frame timestamp predates the pointer event", () => {
+    window.dispatchEvent(new PointerEvent("pointermove", {
+      clientX: 880, clientY: 100, pointerType: "mouse", isPrimary: true,
+    }));
+    const pending = [...frames.values()];
+    frames.clear();
+    pending.forEach(callback => callback(performance.now() - 100));
+    expect(Math.abs(value("rx"))).toBeLessThanOrEqual(6);
+    expect(Math.abs(value("ry"))).toBeLessThanOrEqual(6);
+    settle();
+    expect(value("rx")).toBe(6);
+    expect(value("ry")).toBe(6);
+  });
+
   it("removes motion listeners and pending frames on teardown", () => {
     window.dispatchEvent(new PointerEvent("pointermove", {
       clientX: 880, clientY: 100, pointerType: "mouse", isPrimary: true,

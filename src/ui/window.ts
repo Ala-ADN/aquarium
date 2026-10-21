@@ -67,7 +67,9 @@ export function createWindow(title: string, content: HTMLElement) {
   function animate(now: number) {
     // Read geometry once per frame, before applying any transform writes.
     applyPointer();
-    const dt = Math.min((now - lastFrame) / 1000, 0.05);
+    // An event can arrive after this frame's timestamp was sampled, especially
+    // during heavy rendering. A negative step makes spring decay grow instead.
+    const dt = Math.max(0, Math.min((now - lastFrame) / 1000, 0.05));
     lastFrame = now;
     let moving = false;
     for (const axis of axes) {
@@ -130,6 +132,7 @@ export function createWindow(title: string, content: HTMLElement) {
   handle.addEventListener(
     "pointerdown",
     (event) => {
+      if (event.target instanceof Element && event.target.closest("button, input, select, textarea, a")) return;
       if (!event.isPrimary || event.button !== 0 || drag) return;
       event.preventDefault();
       pendingPointer = null;
@@ -167,6 +170,7 @@ export function createWindow(title: string, content: HTMLElement) {
   handle.addEventListener(
     "keydown",
     (event) => {
+      if (event.target !== handle) return;
       const directions: Record<string, [number, number]> = {
         ArrowLeft: [-WINDOW_MOTION.keyboardStep, 0],
         ArrowRight: [WINDOW_MOTION.keyboardStep, 0],
@@ -195,6 +199,7 @@ export function createWindow(title: string, content: HTMLElement) {
 
   return {
     element,
+    resetPosition() { place(0, 0); },
     destroy() {
       cancelAnimationFrame(frame);
       pendingPointer = null;
