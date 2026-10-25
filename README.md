@@ -19,8 +19,13 @@ reopening; only released designs persist across page loads.
 The classic VLC-style media player's cone and toolbar use the
 original VideoLAN artwork; source and license notices live in `src/asset/vlc`
 and are published in `public/licenses/vlc`. Its playlist contains the portfolio's
-project demos. The **GitHub ↗** button opens the selected project's `sourceUrl`
+project demos. The **GitHub icon** button opens the selected project's `sourceUrl`
 repository in a new tab; it is disabled when no repository is supplied. The
+playlist uses one line per project with title, description, duration, and GitHub
+columns sized to fit the window. Long descriptions use an ellipsis; hover to read them in full.
+Voy, Credleaf, ReLib, Gommage, and Klippy are included with browser-ready H.264/AAC MP4 demos
+and WebP posters. Original uploads are preserved locally in the ignored
+`media-originals/` folder and excluded from the deployed site. The
 desktop cone reopens a minimized or closed player. The title bar supports dragging,
 double-click to maximize, and the original window tilt. The toolbar's buttons
 float at the same 30px depth as the fish creator's Spin and Update buttons.
@@ -34,12 +39,16 @@ To publish project demos, place compressed exports and posters in
 ```ts
 { id: "project-name", title: "Project name", src: "media/project-name/demo.mp4",
   poster: "media/project-name/poster.webp", projectUrl: "https://example.com",
-  sourceUrl: "https://github.com/your-name/project-name" }
+  sourceUrl: "https://github.com/your-name/project-name",
+  description: "A short description of what the project does.", duration: 79.168 }
 ```
 
-Only the selected poster loads initially; a video's URL is attached on playback.
+No project videos or posters load at startup. Opening VLC loads only the selected
+poster; a video's URL is attached on playback. All included demos retain stereo audio.
 Other playlist entries do not fetch video data or metadata. Media paths respect
-Vite's base URL for GitHub Pages. Keep original recordings outside the repository.
+Vite's base URL for GitHub Pages. Playlist durations are recorded in seconds in
+the library; the current video's decoded duration takes precedence during playback.
+Keep original recordings in `media-originals/` or outside the repository.
 The player remains on its cone screen until demos are added. Playback proceeds
 through the projects in order and stops at the end. It pauses when minimized,
 closed, scrolled out of view, or the browser tab is hidden.

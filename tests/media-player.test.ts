@@ -44,12 +44,43 @@ function button(action: string) {
 }
 
 describe("desktop media player", () => {
+  it("shows descriptions, offline durations, and independent repository links without fetching videos", () => {
+    player = mountMediaPlayer(host, [
+      { ...items[0], description: "Explore a knowledge graph.", duration: 79.168, sourceUrl: "https://github.com/example/first" },
+      { ...items[1], description: "Compare source perspectives.", duration: 90.024, sourceUrl: "https://github.com/example/second" },
+    ]);
+    button("playlist").click();
+    const descriptions = [...host.querySelectorAll(".vlc-playlist-description")].map(el => el.textContent);
+    expect(descriptions).toEqual(["Explore a knowledge graph.", "Compare source perspectives."]);
+    const durations = () => [...host.querySelectorAll(".vlc-playlist-duration")].map(el => el.textContent);
+    expect(durations()).toEqual(["01:19", "01:30"]);
+    expect(host.querySelector(".vlc-time")!.textContent).toBe("00:00 / 01:19");
+    const sources = [...host.querySelectorAll<HTMLAnchorElement>(".vlc-playlist-source")];
+    expect(sources.map(el => el.href)).toEqual(["https://github.com/example/first", "https://github.com/example/second"]);
+    expect(sources.every(el => el.target === "_blank" && el.rel === "noopener noreferrer")).toBe(true);
+    sources[1].addEventListener("click", event => event.preventDefault(), { once: true });
+    sources[1].click();
+    const video = host.querySelector("video")!;
+    expect(video.getAttribute("src")).toBeNull();
+    expect(host.querySelector<HTMLElement>(".vlc-playlist")!.hidden).toBe(false);
+    expect(host.querySelector('[aria-current="true"]')!.textContent).toContain("First demo");
+    button("play").click();
+    Object.defineProperty(video, "duration", { configurable: true, value: 80 });
+    video.dispatchEvent(new Event("loadedmetadata"));
+    expect(durations()).toEqual(["01:20", "01:30"]);
+  });
   it("starts closed and opens from its desktop icon without loading video", () => {
     player = mountDesktopMediaPlayer(host, items);
     expect(player.element.hidden).toBe(true);
+    const video = host.querySelector("video")!;
+    expect(video.getAttribute("src")).toBeNull();
+    expect(video.getAttribute("poster")).toBeNull();
+    expect(video.muted).toBe(false);
+    expect(video.volume).toBe(1);
     host.querySelector<HTMLButtonElement>(".vlc-desktop-icon")!.click();
     expect(player.element.hidden).toBe(false);
-    expect(host.querySelector("video")!.getAttribute("src")).toBeNull();
+    expect(video.getAttribute("src")).toBeNull();
+    expect(video.poster).toContain("media/first/poster.webp");
   });
   it("shows the selected poster without loading videos, including the rest of the playlist", async () => {
     player = mountMediaPlayer(host, items);

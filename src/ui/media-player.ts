@@ -3,11 +3,20 @@ import { createWindow } from "./window";
 import { prioritizeControlClicks } from "./control-pointer-priority";
 import { mediaLibrary, mediaUrl } from "../media/library";
 import type { MediaItem } from "../media/library";
+import githubMark from "../asset/github.svg";
 
 const artwork = import.meta.glob<string>("../asset/vlc/*.png", {
   eager: true, query: "?url", import: "default",
 });
 const imageUrl = (name: string) => artwork[`../asset/vlc/${name}.png`];
+
+function githubIcon() {
+  const icon = document.createElement("img");
+  icon.src = githubMark;
+  icon.alt = "";
+  icon.draggable = false;
+  return icon;
+}
 
 function image(name: string, className = "") {
   const img = document.createElement("img");
@@ -74,7 +83,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
       <div class="vlc-idle" aria-hidden="true"></div>
       <section class="vlc-playlist" aria-label="Playlist" hidden>
         <div class="vlc-playlist-heading"><strong>Project demos</strong><span class="vlc-item-count"></span></div>
-        <div class="vlc-playlist-columns"><span>Title</span><span>Duration</span></div>
+        <div class="vlc-playlist-columns"><span>Title</span><span>Description</span><span>Duration</span><span>Source</span></div>
         <ol class="vlc-playlist-items"></ol>
         <div class="vlc-playlist-empty">Project demos coming soon.</div>
       </section>
@@ -91,7 +100,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
         </span>
         <span class="vlc-tool-group vlc-secondary-tools">
           <button type="button" class="vlc-tool" data-action="playlist" aria-label="Show playlist" aria-pressed="false"></button>
-          <button type="button" class="vlc-tool vlc-github" data-action="github" aria-label="Open project on GitHub" disabled>GitHub ↗</button>
+          <button type="button" class="vlc-tool vlc-github" data-action="github" aria-label="Open project on GitHub" disabled></button>
         </span>
         <div class="vlc-volume">
           <button type="button" class="vlc-mute" data-action="mute" aria-label="Mute" aria-pressed="false"></button>
@@ -129,6 +138,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     mute: "volume-high",
   };
   for (const [action, icon] of Object.entries(icons)) setIcon(tools.get(action as Action)!, icon);
+  tools.get("github")!.append(githubIcon());
   idle.append(image("cone", "vlc-cone"));
 
   const frame = createWindow("VLC media player", content);
@@ -171,6 +181,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   launcher.append(launcherText);
   launcher.addEventListener("click", () => {
     element.hidden = false;
+    updatePoster();
+    update();
     frame.resetPosition();
     element.focus({ preventScroll: true });
   }, opts);
@@ -190,9 +202,23 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
 
   function current() { return queue[selected]; }
   function hasDuration() { return Number.isFinite(video.duration) && video.duration > 0; }
+  function projectStatus() {
+    const item = current();
+    return item ? [item.title, item.description].filter(Boolean).join(" - ") : "VLC media player";
+  }
+  function setStatus(message: string) {
+    status.textContent = message;
+    status.title = message;
+  }
+  function updatePoster() {
+    const poster = !element.hidden ? current()?.poster : undefined;
+    if (poster) video.poster = mediaUrl(poster);
+    else video.removeAttribute("poster");
+  }
 
   function update() {
     const item = current();
+    const duration = hasDuration() ? video.duration : item?.duration ?? 0;
     tools.get("play")!.disabled = !item;
     setIcon(tools.get("play")!, video.paused ? "play" : "pause", video.paused ? "Play" : "Pause");
     tools.get("previous")!.disabled = queue.length < 2 && !(loadedId && video.currentTime > 0);
@@ -208,8 +234,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     query(".vlc-volume-fill").style.setProperty("--vlc-volume", silent ? "0%" : `${volume.value}%`);
     seek.disabled = !loadedId || !hasDuration();
     seek.value = hasDuration() ? `${video.currentTime / video.duration * 1000}` : "0";
-    seek.setAttribute("aria-valuetext", `${formatMediaTime(video.currentTime)} of ${formatMediaTime(video.duration)}`);
-    time.textContent = `${formatMediaTime(video.currentTime)} / ${formatMediaTime(video.duration)}`;
+    seek.setAttribute("aria-valuetext", `${formatMediaTime(video.currentTime)} of ${formatMediaTime(duration)}`);
+    time.textContent = `${formatMediaTime(video.currentTime)} / ${formatMediaTime(duration)}`;
     headingText.textContent = item ? `${item.title} - VLC media player` : "VLC media player";
     idle.hidden = !!video.getAttribute("poster") || (!!loadedId && video.readyState >= 2 && video.videoWidth > 0);
   }
@@ -221,18 +247,40 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     query(".vlc-playlist-empty").hidden = queue.length !== 0;
     queue.forEach((item, index) => {
       const row = document.createElement("li");
+      row.className = "vlc-playlist-row";
       const button = document.createElement("button");
       button.type = "button";
       button.className = "vlc-playlist-item";
       button.setAttribute("aria-current", `${index === selected}`);
       button.title = item.title;
       const name = document.createElement("span");
-      name.textContent = item.title;
+      name.className = "vlc-playlist-title";
+      const title = document.createElement("span");
+      title.className = "vlc-playlist-title-text";
+      title.textContent = item.title;
+      name.append(image("cone-small"), title);
+      const description = document.createElement("span");
+      description.className = "vlc-playlist-description";
+      description.textContent = item.description ?? "—";
+      description.title = item.description ?? "";
       const duration = document.createElement("span");
-      duration.textContent = index === selected && hasDuration() ? formatMediaTime(video.duration) : "—";
-      button.append(image("cone-small"), name, duration);
+      duration.className = "vlc-playlist-duration";
+      const seconds = index === selected && hasDuration() ? video.duration : item.duration;
+      duration.textContent = seconds === undefined ? "—" : formatMediaTime(seconds);
+      button.append(name, description, duration);
       button.addEventListener("click", () => select(index, true), opts);
       row.append(button);
+      if (item.sourceUrl) {
+        const source = document.createElement("a");
+        source.className = "vlc-playlist-source";
+        source.href = item.sourceUrl;
+        source.target = "_blank";
+        source.rel = "noopener noreferrer";
+        source.append(githubIcon());
+        source.title = `View ${item.title} on GitHub`;
+        source.setAttribute("aria-label", `View ${item.title} on GitHub`);
+        row.append(source);
+      }
       list.append(row);
     });
   }
@@ -249,10 +297,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     if (!queue[index]) return;
     unload();
     selected = index;
-    const item = current()!;
-    if (item.poster) video.poster = mediaUrl(item.poster);
-    else video.removeAttribute("poster");
-    status.textContent = item.title;
+    updatePoster();
+    setStatus(projectStatus());
     renderPlaylist();
     update();
     if (play) {
@@ -271,11 +317,11 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     }
     try {
       await video.play();
-      if (!destroyed && loadedId === item.id) status.textContent = item.title;
+      if (!destroyed && loadedId === item.id) setStatus(projectStatus());
     } catch (error) {
       if (destroyed || loadedId !== item.id || (error instanceof DOMException && error.name === "AbortError")) return;
-      status.textContent = error instanceof DOMException && error.name === "NotAllowedError"
-        ? "Press Play to start playback." : "Unable to play this file. Try an MP4 or WebM video.";
+      setStatus(error instanceof DOMException && error.name === "NotAllowedError"
+        ? "Press Play to start playback." : "Unable to play this file. Try an MP4 or WebM video.");
       update();
     }
   }
@@ -293,7 +339,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   function hide(close: boolean) {
     closeMenus();
     video.pause();
-    if (close) { unload(); status.textContent = current()?.title ?? "VLC media player"; }
+    if (close) { unload(); setStatus(projectStatus()); }
     element.hidden = true;
     launcher.focus({ preventScroll: true });
   }
@@ -332,7 +378,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     const info = document.createElement("dl");
     for (const [label, value] of [
       ["Title", item?.title ?? "No media open"],
-      ["Duration", formatMediaTime(video.duration)],
+      ["Description", item?.description ?? "—"],
+      ["Duration", formatMediaTime(hasDuration() ? video.duration : item?.duration ?? NaN)],
       ["Resolution", video.videoWidth ? `${video.videoWidth} × ${video.videoHeight}` : "—"],
     ]) {
       const dt = document.createElement("dt"); dt.textContent = label;
@@ -442,7 +489,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     else { video.pause(); update(); }
   }, opts);
   video.addEventListener("error", () => {
-    if (loadedId) status.textContent = "Unable to play this file. Try an MP4 or WebM video.";
+    if (loadedId) setStatus("Unable to play this file. Try an MP4 or WebM video.");
   }, opts);
   document.addEventListener("visibilitychange", () => { if (document.hidden) video.pause(); }, opts);
 
