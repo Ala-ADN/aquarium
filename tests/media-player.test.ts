@@ -95,9 +95,13 @@ describe("desktop media player", () => {
     expect(video.paused).toBe(false);
     expect(button("play").getAttribute("aria-label")).toBe("Pause");
     button("next").click();
-    expect(video.src).toContain("media/second/demo.mp4");
+    expect(video.getAttribute("src")).toBeNull();
+    expect(video.paused).toBe(true);
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
     expect(video.getAttribute("poster")).toBeNull();
     expect(host.querySelector(".vlc-status")!.textContent).toBe("Second demo");
+    button("play").click();
+    expect(video.src).toContain("media/second/demo.mp4");
   });
 
   it("leaves an empty project playlist idle without requesting a video", () => {
@@ -215,26 +219,31 @@ describe("desktop media player", () => {
     expect(video.currentTime).toBe(75);
   });
 
-  it("advances through projects in order and stops at the end of the playlist", () => {
+  it("stops at the end of a video without advancing or playing another project", () => {
     player = mountMediaPlayer(host, items);
     button("play").click();
     const video = host.querySelector("video")!;
     video.dispatchEvent(new Event("ended"));
-    expect(video.src).toContain("second/demo.mp4");
-    video.dispatchEvent(new Event("ended"));
-    expect(video.src).toContain("second/demo.mp4");
+    expect(video.src).toContain("first/demo.mp4");
+    expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
     expect(video.paused).toBe(true);
     expect(video.loop).toBe(false);
   });
 
-  it("toggles the playlist and starts the selected entry", () => {
+  it("selects a playlist entry while paused and loads it only on Play", () => {
     player = mountMediaPlayer(host, items);
     button("playlist").click();
     expect(host.querySelector<HTMLElement>(".vlc-playlist")!.hidden).toBe(false);
     expect(button("playlist").getAttribute("aria-pressed")).toBe("true");
     host.querySelectorAll<HTMLButtonElement>(".vlc-playlist-item")[1].click();
-    expect(host.querySelector("video")!.src).toContain("second/demo.mp4");
+    const video = host.querySelector("video")!;
+    expect(video.getAttribute("src")).toBeNull();
+    expect(video.paused).toBe(true);
+    expect(HTMLMediaElement.prototype.play).not.toHaveBeenCalled();
     expect(host.querySelectorAll("[aria-current='true']")).toHaveLength(1);
     expect(host.querySelector<HTMLElement>(".vlc-playlist")!.hidden).toBe(true);
+    button("play").click();
+    expect(video.src).toContain("second/demo.mp4");
+    expect(video.paused).toBe(false);
   });
 });

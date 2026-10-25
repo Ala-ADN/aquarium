@@ -268,7 +268,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
       const seconds = index === selected && hasDuration() ? video.duration : item.duration;
       duration.textContent = seconds === undefined ? "—" : formatMediaTime(seconds);
       button.append(name, description, duration);
-      button.addEventListener("click", () => select(index, true), opts);
+      button.addEventListener("click", () => select(index), opts);
       row.append(button);
       if (item.sourceUrl) {
         const source = document.createElement("a");
@@ -293,7 +293,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     update();
   }
 
-  function select(index: number, play = false) {
+  function select(index: number) {
     if (!queue[index]) return;
     unload();
     selected = index;
@@ -301,10 +301,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     setStatus(projectStatus());
     renderPlaylist();
     update();
-    if (play) {
-      if (!playlist.hidden) act("playlist");
-      void start();
-    }
+    if (!playlist.hidden) act("playlist");
   }
 
   async function start() {
@@ -329,11 +326,11 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   function advance(direction: number) {
     if (!queue.length) return;
     if (direction < 0 && loadedId && (video.currentTime > 3 || selected === 0)) {
-      video.currentTime = 0; update(); return;
+      video.pause(); video.currentTime = 0; update(); return;
     }
     const next = selected + direction;
     if (next >= queue.length || next < 0) return;
-    select(next, true);
+    select(next);
   }
 
   function hide(close: boolean) {
@@ -485,8 +482,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   }
   video.addEventListener("loadedmetadata", () => { renderPlaylist(); update(); }, opts);
   video.addEventListener("ended", () => {
-    if (selected < queue.length - 1) advance(1);
-    else { video.pause(); update(); }
+    video.pause();
+    update();
   }, opts);
   video.addEventListener("error", () => {
     if (loadedId) setStatus("Unable to play this file. Try an MP4 or WebM video.");

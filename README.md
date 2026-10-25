@@ -49,8 +49,9 @@ Other playlist entries do not fetch video data or metadata. Media paths respect
 Vite's base URL for GitHub Pages. Playlist durations are recorded in seconds in
 the library; the current video's decoded duration takes precedence during playback.
 Keep original recordings in `media-originals/` or outside the repository.
-The player remains on its cone screen until demos are added. Playback proceeds
-through the projects in order and stops at the end. It pauses when minimized,
+The player remains on its cone screen until demos are added. Autoplay is off:
+selecting a project or using Previous/Next leaves it paused until Play is pressed.
+Each video stops at its end without starting another project. It pauses when minimized,
 closed, scrolled out of view, or the browser tab is hidden.
 Space toggles playback while the player is focused; Left/Right seek, M mutes,
 and Ctrl+L opens the playlist. N/P select the next/previous
