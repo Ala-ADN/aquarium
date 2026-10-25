@@ -58,14 +58,13 @@ export function mountFihCreator(
   let elapsed = visit.elapsed;
   let released = visit.fih;
   const draft = new FihDraft(released ?? undefined);
-  const updateFavicon = createFihFaviconUpdater();
   let lastTick = performance.now();
   let wasVisible = !document.hidden;
-  let reachedFooter = false;
+  let enteredCreator = false;
   let destroyed = false;
   const events = new AbortController();
   const options = { signal: events.signal };
-  const app = document.querySelector<HTMLElement>("#fih-footer")!;
+  const app = document.querySelector<HTMLElement>("#portfolio-content")!;
   const form = document.createElement("form");
   form.className = "fih-form";
   form.innerHTML = `
@@ -76,7 +75,88 @@ export function mountFihCreator(
   const fihWindow = createWindow("make a fih", form);
   fihWindow.element.classList.add("fih-window");
   fihWindow.element.id = "fih-creator";
-  app.replaceChildren(fihWindow.element);
+  fihWindow.element.hidden = true;
+  fihWindow.element.tabIndex = -1;
+  const handle = fihWindow.element.querySelector<HTMLElement>(".glass-window__handle")!;
+  const heading = fihWindow.element.querySelector<HTMLElement>(".title-bar-text")!;
+  const titleIcon = document.createElement("img");
+  titleIcon.className = "fih-title-icon";
+  titleIcon.alt = "";
+  titleIcon.draggable = false;
+  heading.prepend(titleIcon);
+
+  const launcher = document.createElement("button");
+  launcher.type = "button";
+  launcher.className = "desktop-icon fih-desktop-icon";
+  launcher.setAttribute("aria-label", "Open make a fih");
+  const appIcon = document.createElement("img");
+  appIcon.alt = "";
+  appIcon.draggable = false;
+  const label = document.createElement("span");
+  label.textContent = "make a fih";
+  launcher.append(appIcon, label);
+  const updateFavicon = createFihFaviconUpdater((url) => {
+    appIcon.src = titleIcon.src = url;
+  });
+  launcher.addEventListener(
+    "click",
+    () => {
+      fihWindow.element.hidden = false;
+      fihWindow.resetPosition();
+      updatePreviewCutout();
+      livePreview?.resize();
+      enterCreator();
+      handle.focus({ preventScroll: true });
+    },
+    options
+  );
+  function hide() {
+    stopSpin();
+    releaseFeedback.cancel();
+    clearHover();
+    tick();
+    persist();
+    fihWindow.element.hidden = true;
+    launcher.focus({ preventScroll: true });
+  }
+  const windowControls = document.createElement("div");
+  windowControls.className = "title-bar-controls";
+  function maximize() {
+    const maximized = fihWindow.element.toggleAttribute("data-maximized");
+    const button = windowControls.children[1] as HTMLButtonElement;
+    button.setAttribute("aria-label", maximized ? "Restore" : "Maximize");
+    button.title = maximized ? "Restore" : "Maximize";
+    if (!maximized) fihWindow.resetPosition();
+  }
+  for (const name of ["Minimize", "Maximize", "Close"]) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.setAttribute("aria-label", name);
+    button.title = name;
+    button.addEventListener("click", name === "Maximize" ? maximize : hide, options);
+    windowControls.append(button);
+  }
+  handle.append(windowControls);
+  handle.addEventListener(
+    "dblclick",
+    (event) => {
+      if (!(event.target instanceof Element && event.target.closest("button"))) maximize();
+    },
+    options
+  );
+  fihWindow.element.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (
+        event.target instanceof Element &&
+        !event.target.closest("button, input, .fih-reel, .glass-window__handle")
+      ) {
+        fihWindow.element.focus({ preventScroll: true });
+      }
+    },
+    options
+  );
+  app.append(launcher, fihWindow.element);
   const find = <T extends HTMLElement>(selector: string) => form.querySelector<T>(selector)!;
   const preview = find<HTMLCanvasElement>(".fih-preview canvas");
   const previewFrame = preview.parentElement!;
@@ -142,6 +222,7 @@ export function mountFihCreator(
     hoverSlot(null);
   }
   function slotAtPointer(event: MouseEvent) {
+    if (fihWindow.element.hidden) return null;
     const target =
       event.target instanceof Element ? event.target.closest<HTMLElement>(".fih-lane") : null;
     if (target && slotWheels.has(target)) return target;
@@ -164,8 +245,7 @@ export function mountFihCreator(
 
   function persist() {
     const saved = storage !== null && saveVisit(storage, { elapsed, fih: released });
-    if (!saved)
-      spinStatus.textContent = "can't save here";
+    if (!saved) spinStatus.textContent = "can't save here";
     return saved;
   }
   function tick() {
@@ -183,7 +263,7 @@ export function mountFihCreator(
     const seconds = Math.floor(elapsed / 1000);
     secondsNumber.textContent = String(seconds);
     secondsUnit.textContent = seconds === 1 ? "second" : "seconds";
-    release.disabled = !reachedFooter || earned === 0;
+    release.disabled = !enteredCreator || earned === 0;
     if (earned !== previous) persist();
   }
   function animate(element: HTMLElement, duration: number) {
@@ -440,8 +520,8 @@ export function mountFihCreator(
     { threshold: 0 }
   );
   function enterCreator() {
-    if (reachedFooter) return;
-    reachedFooter = true;
+    if (enteredCreator) return;
+    enteredCreator = true;
     observer.disconnect();
     updateAllowance();
   }
@@ -529,6 +609,7 @@ export function mountFihCreator(
       observer.disconnect();
       resizeObserver.disconnect();
       livePreview?.destroy();
+      launcher.remove();
       fihWindow.destroy();
     },
   };

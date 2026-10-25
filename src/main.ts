@@ -180,6 +180,7 @@ let debugPanel: ReturnType<typeof import("./ui/debug-panel")["createDebugPanel"]
 let debugLoading: Promise<void> | null = null;
 let creator: ReturnType<typeof import("./ui/fih-editor")["mountFihEditor"]> | null = null;
 let mediaPlayer: ReturnType<typeof import("./ui/media-player")["mountMediaPlayer"]> | null = null;
+let trashcan: ReturnType<typeof import("./ui/trashcan")["mountTrashcan"]> | null = null;
 let saveStatus: FihSaveStatus | null = null;
 let disposed = false;
 
@@ -221,7 +222,7 @@ async function loadEditor() {
     // Failed module fetches may be cached, and a deployment may have replaced
     // the old chunk URL. Reload the entry document to recover in either case.
     retry.addEventListener("click", () => window.location.reload(), { once: true });
-    document.querySelector("#fih-footer")?.replaceChildren(retry);
+    document.querySelector("#portfolio-content")?.append(retry);
   }
 }
 
@@ -238,6 +239,23 @@ async function loadMediaPlayer() {
     retry.className = "media-player-retry";
     retry.style.pointerEvents = "auto";
     retry.textContent = "Retry loading media player";
+    retry.addEventListener("click", () => window.location.reload(), { once: true });
+    host.append(retry);
+  }
+}
+
+async function loadTrashcan() {
+  const host = document.querySelector<HTMLElement>("#portfolio-content");
+  if (!host) return;
+  try {
+    const { mountTrashcan } = await import("./ui/trashcan");
+    if (!disposed) trashcan = mountTrashcan(host);
+  } catch {
+    if (disposed) return;
+    const retry = document.createElement("button");
+    retry.type = "button";
+    retry.style.pointerEvents = "auto";
+    retry.textContent = "Retry loading Trashcan";
     retry.addEventListener("click", () => window.location.reload(), { once: true });
     host.append(retry);
   }
@@ -364,6 +382,7 @@ renderer.setAnimationLoop(() => {
         if (disposed) return;
         void loadEditor();
         void loadMediaPlayer();
+        void loadTrashcan();
         if (debug || effectController.paused) void loadDebug();
       }, 0);
     });
@@ -376,6 +395,7 @@ import.meta.hot?.dispose(() => {
   clearTimeout(deferredWork);
   creator?.destroy();
   mediaPlayer?.destroy();
+  trashcan?.destroy();
   debugPanel?.destroy();
   renderer.setAnimationLoop(null);
 });

@@ -1,0 +1,88 @@
+▄▖▜     ▄▖ ▌ ▌▘      ▄▖        ▜ ▘
+▌▌▐ ▀▌  ▙▖▛▌▛▌▌▛▌█▌  ▗▘▀▌▛▌▌▌▀▌▐ ▌
+▛▌▐▖█▌  ▙▖▙▌▙▌▌▌▌▙▖  ▙▖█▌▙▌▙▌█▌▐▖▌                                                                                                     
+
+alaeddine.zaouali@insat.ucar.tn
+github.com/Ala-ADN
+Available from January 2027 for a 4-6 month PFE internship
+
+██ EDUCATION
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+National Institute of Applied Science and Technology (INSAT)     [Sep 2022 - Sep 2027]
+Software Engineering Degree
+
+██ EXPERIENCE
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Machine Learning Intern                                           [Jun 2026 - Present]
+Arome AI (Remote, US)
+  ▪ Built a fragrance-screening platform for perfume design, combining cross-attention
+    predictions of 412 olfactory receptor responses and odor labels with models
+    assessing fragrance release, early toxicity, and biodegradability
+  ▪ Cut mean inference time 17x, from 36.8 s to 2.1 s, by moving the ESM-2 encoder
+    offline and serving precomputed receptor embeddings from a FastAPI service on a
+    CPU-only VPS
+  ▪ Trained 7 QSPR models with OOF-residual-calibrated uncertainty on OPERA datasets
+    of up to 11,023 molecules, reaching 0.905 held-out R2 for vapor pressure and 0.879
+    ROC-AUC for biodegradability
+
+Data Science Intern                                                   [Jul - Aug 2025]
+Arome AI (Remote, US)
+  ▪ Developed a semantic embedding space of 4,983 aromatic compounds for downstream
+    generation and refinement, enriched scent labels with 241 Fragrantica notes to
+    capture nuance; confirmed through blind rating by a perfumer
+  ▪ Validated the semantic space as a useful prediction target by training a Graph
+    Attention Network to predict odor profiles from molecular structure, reaching 0.85
+    test macro AP on a scaffold-based split
+  ▪ Tested whether odor semantics encode receptor-level biology using GNINA scores for
+    135 molecules and 409 receptors; semantic descriptors outperformed structure alone
+    at predicting binding (0.60 vs. 0.55 AUC)
+
+Machine Learning Intern                                                     [Jun 2024]
+Metadrift (Hybrid, Tunisia)
+  ▪ Built a LangChain knowledge base and RAG agent adopted by a 4-person customer-
+    relations team, eliminating repeated document uploads and preserving context
+    during client onboarding
+  ▪ Benchmarked ChromaDB, Elasticsearch, and pgvector on 30 internal documents across
+    memory footprint and deployment complexity, selecting ChromaDB for the team's
+    sub-100-document workload
+
+██ PROJECTS
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+Agent Tracing and Replay                                                        [2026]
+Hackathon Project | Atlassian Forge, Python, LangChain, LangGraph, MCP
+  ▪ Built a Jira-native Atlassian Forge application connecting issue tracking with
+    agent traceability, with issue-linked execution records, trace inspection and
+    replay
+  ▪ Built Python recording adapters for LangChain, LangGraph and MCP, capturing
+    prompts, context, tool inputs/outputs and latency in structured execution traces
+  ▪ Implemented recorded-response replay, tool mocking, editable branches and
+    divergence tracking; added synthetic evaluation of replay fidelity and side-
+    effects
+
+Context Compression Middleware                                                  [2026]
+End-of-Year Project | TypeScript, LLM Agents, PostgreSQL, Evaluation
+  ▪ Built context-management middleware for an open-source SQL agent, mitigating
+    amnesia, entity confusion, and goal drift with a four-zone architecture separating
+    schema, entity state, compressed history, and recent context
+  ▪ Integrated LLMLingua-2 as an alternative compression backend and built a benchmark
+    corpus of 35 annotated sessions across 2 synthetic PostgreSQL databases and 5
+    context-rot scenarios
+  ▪ Improved LLM-judge context-retention scores: 8.46 to 9.63/10 for alternating
+    analyses and 4.75 to 5.45/10 for long iterative corrections; quantified quality
+    trade-offs across compression strategies
+
+Global Misinformation Analysis                                                  [2026]
+Research Project | Python, Airflow, BERTopic, Qdrant, spaCy, GeoNames
+  ▪ Built an ETL pipeline to harvest, normalize, deduplicate, and embed 10,000+
+    archived COVID reports from 2 Archive-It collections, then georeferenced place
+    names with spaCy and GeoNames
+  ▪ Developed dynamic topic models with BERTopic, including intertopic maps,
+    hierarchical clustering, and temporal networks that identify topic births, deaths,
+    splits, and merges
+
+██ SKILLS
+▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+  ML & Generative AI: PyTorch, scikit-learn, Hugging Face, LangChain, Google ADK, RAG
+  Backend & Data: FastAPI, PostgreSQL, Neo4j, Qdrant, ChromaDB, Airflow
+  Engineering & MLOps: Docker, MLflow, GitHub Actions, Linux, DigitalOcean
+  Languages: English, French (professional working proficiency)

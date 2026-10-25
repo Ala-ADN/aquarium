@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mountMediaPlayer } from "../src/ui/media-player";
+import { mountMediaPlayer as mountDesktopMediaPlayer } from "../src/ui/media-player";
 import type { MediaItem } from "../src/media/library";
 
 const items: MediaItem[] = [
@@ -9,6 +9,11 @@ const items: MediaItem[] = [
 ];
 let player: ReturnType<typeof mountMediaPlayer>;
 let host: HTMLElement;
+function mountMediaPlayer(...args: Parameters<typeof mountDesktopMediaPlayer>) {
+  const app = mountDesktopMediaPlayer(...args);
+  host.querySelector<HTMLButtonElement>(".vlc-desktop-icon")!.click();
+  return app;
+}
 
 beforeEach(() => {
   document.body.innerHTML = '<main id="portfolio-content"></main>';
@@ -39,6 +44,13 @@ function button(action: string) {
 }
 
 describe("desktop media player", () => {
+  it("starts closed and opens from its desktop icon without loading video", () => {
+    player = mountDesktopMediaPlayer(host, items);
+    expect(player.element.hidden).toBe(true);
+    host.querySelector<HTMLButtonElement>(".vlc-desktop-icon")!.click();
+    expect(player.element.hidden).toBe(false);
+    expect(host.querySelector("video")!.getAttribute("src")).toBeNull();
+  });
   it("shows the selected poster without loading videos, including the rest of the playlist", async () => {
     player = mountMediaPlayer(host, items);
     const video = host.querySelector("video")!;

@@ -1,0 +1,246 @@
+.trashcan-desktop-icon {
+  top: 218px;
+  font-family: "Pixelated MS Sans Serif", Arial, sans-serif;
+}
+.trashcan-desktop-icon img {
+  image-rendering: pixelated;
+}
+
+.win98.glass-window {
+  --window-width: 560px;
+  color: #000;
+  outline: none;
+}
+.win98 .glass-window__surface {
+  overflow: visible;
+}
+.win98 .glass-window__handle {
+  min-height: 22px;
+}
+.win98 .glass-window__handle h2 {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  font:
+    bold 11px "Pixelated MS Sans Serif",
+    Arial,
+    sans-serif;
+  pointer-events: none;
+}
+.win98 .title-bar-text img {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.win98 .title-bar-text span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.win98 .title-bar-controls {
+  flex: none;
+}
+.win98 .glass-window__body {
+  margin: 0;
+  padding: 0;
+  transform-style: preserve-3d;
+}
+.win98 :is(button, summary):focus-visible {
+  outline: 1px dotted currentColor;
+  outline-offset: -4px;
+}
+.win98 img {
+  image-rendering: pixelated;
+  pointer-events: none;
+  user-select: none;
+}
+.win98 .status-bar {
+  margin: 4px 0 0;
+}
+.win98 .status-bar-field {
+  margin: 0;
+  padding: 3px 5px;
+}
+.win98 .status-bar-field:last-child {
+  flex: 0 0 auto;
+  min-width: 100px;
+}
+.trashcan-address {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 3px;
+}
+.trashcan-path {
+  flex: 1;
+  padding: 4px 6px;
+  background: #fff;
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px grey,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a;
+}
+.trashcan-files {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  align-content: start;
+  gap: 10px 4px;
+  min-height: min(240px, calc(100dvh - 240px));
+  padding: 18px 12px;
+  background: #fff;
+  box-shadow:
+    inset -1px -1px #fff,
+    inset 1px 1px grey,
+    inset -2px -2px #dfdfdf,
+    inset 2px 2px #0a0a0a;
+}
+.win98 .trashcan-file {
+  --window-depth: 20px;
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 6px;
+  min-width: 0;
+  padding: 6px 2px;
+  border: 1px solid transparent;
+  background: transparent;
+  box-shadow: none;
+  color: #000;
+}
+.win98 .trashcan-file:is(:hover, :focus-visible) {
+  border-color: #000080;
+  background: #000080;
+  color: #fff;
+}
+.win98 .trashcan-file:active {
+  padding: 6px 2px;
+  box-shadow: none;
+}
+.trashcan-file img {
+  width: 32px;
+  height: 32px;
+}
+.trashcan-file span {
+  overflow-wrap: anywhere;
+}
+.trashcan-empty {
+  grid-column: 1 / -1;
+  color: #808080;
+}
+.notepad-window.win98 {
+  --window-width: 640px;
+  --notepad-top: clamp(24px, 4vh, 48px);
+}
+.notepad-window.win98:not([data-maximized]) {
+  top: var(--notepad-top);
+  left: 0;
+}
+.notepad-editor {
+  display: flex;
+  flex-direction: column;
+}
+/* Paint menus together above the editor's raised text area. */
+.win98 .notepad-menubar {
+  transform-style: flat;
+  position: relative;
+  z-index: 1;
+  display: flex;
+  padding: 1px 0;
+  border-bottom: 1px solid #808080;
+}
+.notepad-menubar details {
+  position: relative;
+}
+.notepad-menubar summary {
+  padding: 4px 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.notepad-menubar summary::-webkit-details-marker {
+  display: none;
+}
+.notepad-menubar summary:hover,
+.notepad-menubar details[open] summary {
+  background: #000080;
+  color: #fff;
+}
+.notepad-menu {
+  --window-depth: 0px;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 190px;
+  padding: 3px;
+  background: #c0c0c0;
+  box-shadow:
+    inset -1px -1px #0a0a0a,
+    inset 1px 1px #fff,
+    inset -2px -2px grey,
+    inset 2px 2px #dfdfdf;
+  translate: 0 0 var(--window-depth);
+}
+.win98 .notepad-menu button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  min-height: 24px;
+  padding: 4px 8px;
+  background: transparent;
+  box-shadow: none;
+  text-align: left;
+  white-space: nowrap;
+}
+.win98 .notepad-menu button:is(:hover, :focus-visible) {
+  background: #000080;
+  color: #fff;
+}
+.win98 .notepad-text {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  height: var(--notepad-text-height, 380px);
+  max-height: max(64px, calc(100dvh - var(--notepad-top) - var(--notepad-chrome-height, 74px) - 24px));
+  min-height: 64px;
+  margin: 0;
+  padding: 8px;
+  resize: none;
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  font:
+    13px/1.4 "Courier New",
+    monospace;
+  scrollbar-width: auto;
+}
+.win98 .notepad-text::-webkit-scrollbar {
+  display: block;
+}
+.win98[data-maximized] .glass-window__body,
+.win98[data-maximized] .glass-window__content,
+.win98[data-maximized] .trashcan-files,
+.win98[data-maximized] .notepad-text {
+  flex: 1;
+  min-height: 0;
+}
+.win98[data-maximized] .trashcan-directory {
+  display: flex;
+  flex-direction: column;
+}
+.notepad-window[data-maximized] .notepad-text {
+  height: auto;
+  max-height: none;
+}
+.notepad-window[data-maximized] .glass-window__body {
+  display: flex;
+}
+@media (max-width: 480px) {
+  .trashcan-files {
+    grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+    padding: 12px 8px;
+  }
+}

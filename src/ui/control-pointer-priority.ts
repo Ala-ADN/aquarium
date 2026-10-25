@@ -20,13 +20,16 @@ export function prioritizeControlClicks(container: HTMLElement, signal: AbortSig
 
   function controlAtPointer(event: PointerEvent): Control | null {
     const target = event.target instanceof Element ? event.target : null;
-    const nativeControl = target?.closest<HTMLElement>('button, input, select, textarea, a, [role="dialog"]');
+    const targetWindow = target?.closest(".glass-window");
+    if (targetWindow && targetWindow !== container.closest(".glass-window")) return null;
+    const nativeControl = target?.closest<HTMLElement>('button, input, select, textarea, a, summary, [role="dialog"]');
     // Respect sliders and controls belonging to another window or dialog.
     if (nativeControl) {
       if (!container.contains(nativeControl)) return null;
       return nativeControl.matches(CONTROL_SELECTOR) ? nativeControl as Control : null;
     }
     for (const control of container.querySelectorAll<Control>(CONTROL_SELECTOR)) {
+      if (control.closest("[hidden], details:not([open])")) continue;
       if (containsPoint(control.getBoundingClientRect(), event.clientX, event.clientY)) return control;
     }
     return null;

@@ -3,16 +3,17 @@ import "./window.css";
 import { WINDOW_MOTION } from "../constants";
 
 let nextWindowId = 0;
+let topWindowLayer = 2;
 const MOTION_SPEED = WINDOW_MOTION.speed;
 const DRAG_MOTION_SPEED = MOTION_SPEED * WINDOW_MOTION.dragSpeedMultiplier;
 
 /** Shared window chrome; callers supply the content and choose its layout. */
-export function createWindow(title: string, content: HTMLElement) {
+export function createWindow(title: string, content: HTMLElement, theme: "7" | "98" = "7") {
   const element = document.createElement("section");
-  element.className = "glass-window win7";
+  element.className = `glass-window win${theme}`;
 
   const surface = document.createElement("div");
-  surface.className = "window active glass glass-window__surface";
+  surface.className = `window glass-window__surface${theme === "7" ? " active glass" : ""}`;
   const handle = document.createElement("header");
   handle.className = "title-bar glass-window__handle";
   handle.tabIndex = 0;
@@ -34,6 +35,9 @@ export function createWindow(title: string, content: HTMLElement) {
 
   const events = new AbortController();
   const options = { signal: events.signal };
+  const bringToFront = () => { element.style.zIndex = `${++topWindowLayer}`; };
+  element.addEventListener("pointerdown", bringToFront, options);
+  element.addEventListener("focusin", bringToFront, options);
   let x = 0;
   let y = 0;
   const axes = ["x", "y", "rx", "ry"] as const;

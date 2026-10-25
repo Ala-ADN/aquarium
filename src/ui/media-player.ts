@@ -135,6 +135,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   const element = frame.element;
   element.id = "media-player";
   element.classList.add("vlc-window");
+  element.hidden = true;
   element.tabIndex = -1;
   const handle = element.querySelector<HTMLElement>(".glass-window__handle")!;
   const heading = element.querySelector<HTMLElement>(".title-bar-text")!;
@@ -162,7 +163,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
 
   const launcher = document.createElement("button");
   launcher.type = "button";
-  launcher.className = "vlc-desktop-icon";
+  launcher.className = "desktop-icon vlc-desktop-icon";
   launcher.setAttribute("aria-label", "Open VLC media player");
   launcher.append(image("cone-small"));
   const launcherText = document.createElement("span");

@@ -24,7 +24,7 @@ export function createFihLivePreview(canvas: HTMLCanvasElement, appearance: FihA
 }): FihPreviewController {
   const parent = canvas.parentElement!;
   // Creating a second WebGL context is expensive even when nothing is drawn.
-  // Wait until the footer enters view, keeping the initial tank on the fast path.
+  // Wait until the creator opens, keeping the initial tank on the fast path.
   let renderer: WebGLRenderer | null = null;
   const camera = new PerspectiveCamera();
   const scene = new Scene();

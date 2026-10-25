@@ -1,0 +1,13 @@
+Windows 98 Recycle Bin (full) icon
+
+Original artwork: Microsoft Corporation.
+Unmodified 16x16 and 32x32 PNG resources downloaded from the 98.js archive:
+https://github.com/1j01/98/tree/master/images/icons
+
+recycle-bin-full-16x16.png
+https://raw.githubusercontent.com/1j01/98/master/images/icons/recycle-bin-full-16x16.png
+Git blob SHA-1: 833a496965c3899cd5a60e17bc3490537bece78a
+
+recycle-bin-full-32x32.png
+https://raw.githubusercontent.com/1j01/98/master/images/icons/recycle-bin-full-32x32.png
+Git blob SHA-1: a390ea5db48fe18c033e4482797445d0db2f2ef4

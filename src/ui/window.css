@@ -5,15 +5,36 @@
 }
 
 .glass-window {
-  position: relative;
+  position: absolute;
+  top: clamp(76px, 13vh, 150px);
+  left: 0;
+  right: 0;
+  margin: 0 auto;
   width: var(--window-width, 640px);
   min-width: 0;
-  max-width: 100%;
+  max-width: calc(100% - 24px);
   pointer-events: auto;
   translate: 0 0;
 }
 
+.glass-window[data-maximized] {
+  position: fixed;
+  z-index: 20;
+  inset: 8px;
+  width: auto;
+  max-width: none;
+  margin: 0;
+  translate: 0 0 !important;
+}
+.glass-window[data-maximized] .glass-window__surface {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transform: none !important;
+}
+
 .glass-window__surface {
+  overflow: visible;
   transform: perspective(1000px) translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg);
   transform-style: preserve-3d;
 }

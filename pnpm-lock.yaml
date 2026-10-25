@@ -11,12 +11,18 @@ importers:
       7.css:
         specifier: ^0.21.1
         version: 0.21.1
+      98.css:
+        specifier: 0.1.21
+        version: 0.1.21
       firebase:
         specifier: ^13.0.0
         version: 13.0.0
       three:
         specifier: ^0.182.0
         version: 0.182.0
+      xp.css:
+        specifier: 0.2.6
+        version: 0.2.6
     devDependencies:
       '@firebase/rules-unit-testing':
         specifier: ^6.0.0
@@ -44,6 +50,9 @@ packages:
 
   7.css@0.21.1:
     resolution: {integrity: sha512-Q+/aFUpGemoR/Zltj4a7yvHonyxfb+9cgiwBL+j/Lm+H28EOoLzWoJki7MdGPV+3mLCvKSCVqr3M2x2uNYyeWw==}
+
+  98.css@0.1.21:
+    resolution: {integrity: sha512-ddk5qtUWyapM0Bzd5jwGExoE5fdSEGrP+F5VbYjyZLf2c9UVmn6w2NPTvCsoD4BWdGsjdLjlkQGhWwWTJcYQJQ==}
 
   '@apidevtools/json-schema-ref-parser@9.1.2':
     resolution: {integrity: sha512-r1w81DpR+KyRWd3f+rk6TNqMgedmAxZP5v5KWlXQWlgMUUtyEJch0DKEci1SorPMiSeM8XPl7MZ3miJ60JIpQg==}
@@ -3079,6 +3088,9 @@ packages:
     resolution: {integrity: sha512-PSNhEJDejZYV7h50BohL09Er9VaIefr2LMAf3OEmpCkjOi34eYyQYAXUTjEQtZJTKcF0E2UKTh+osDLsgNim9Q==}
     engines: {node: '>=8'}
 
+  xp.css@0.2.6:
+    resolution: {integrity: sha512-v0qUB4wOvyXIMLNid5bIpm+0n5aL4i8wE5dqJH8LNVxE04PxUUxjwf2rNzengegUIK03XC4vbfLVCPAfMLtuqA==}
+
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
     engines: {node: '>=0.4'}
@@ -3131,6 +3143,8 @@ packages:
 snapshots:
 
   7.css@0.21.1: {}
+
+  98.css@0.1.21: {}
 
   '@apidevtools/json-schema-ref-parser@9.1.2':
     dependencies:
@@ -6434,6 +6448,8 @@ snapshots:
   ws@8.22.0: {}
 
   xdg-basedir@4.0.0: {}
+
+  xp.css@0.2.6: {}
 
   xtend@4.0.2: {}
 

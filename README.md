@@ -8,7 +8,15 @@ project, enable App Check, and configure Pages. Without Firebase configuration,
 the app keeps working with local saves. Run `pnpm test:rules` for the emulator
 security tests (Java 21+ required).
 
-The desktop opens a classic VLC-style media player. Its cone and toolbar use the
+The desktop starts with only its app icons over the animated aquarium, with no
+open windows. Page scrolling is enabled on phone screens (up to 600px wide);
+larger screens keep the desktop fixed. Open **VLC media player** or **make a fih** from
+their desktop icons. Both apps have minimize, maximize/restore, and close controls.
+The fish app's desktop and title-bar icons use the same SVG as the favicon and
+update as the draft changes. Closing the creator retains the current draft for
+reopening; only released designs persist across page loads.
+
+The classic VLC-style media player's cone and toolbar use the
 original VideoLAN artwork; source and license notices live in `src/asset/vlc`
 and are published in `public/licenses/vlc`. Its playlist contains the portfolio's
 project demos. The **GitHub ↗** button opens the selected project's `sourceUrl`
@@ -37,17 +45,19 @@ through the projects in order and stops at the end. It pauses when minimized,
 closed, scrolled out of view, or the browser tab is hidden.
 Space toggles playback while the player is focused; Left/Right seek, M mutes,
 and Ctrl+L opens the playlist. N/P select the next/previous
-project, +/- adjust speed, and Ctrl+I opens media information. The footer fish
+project, +/- adjust speed, and Ctrl+I opens media information. The desktop fish
 creator remains independently available.
 
 The GitHub Pages workflow publishes the website only. When the saved design
 format or database rules change, deploy the matching Firebase rules **before**
 publishing the client: `pnpm deploy:database --project YOUR_PROJECT_ID`.
 
-The wide fih window lives in the footer, after the space reserved for experience
-and project windows. With the page visible, visitors earn fih according to
+The fih creator opens in its own draggable desktop window. On phone screens,
+the page scrolls to show the full window. Window surfaces retain visible overflow
+and their 3D parallax at every screen size.
+With the page visible, visitors earn fih according to
 `f(x) = 1 + 9 * sqrt(x / 200)`, where x is seconds, capped at 10 after 200 seconds.
-Reaching the footer lets them release the whole-number portion of their allowance.
+Opening the creator lets them release the whole-number portion of their allowance.
 
 The creator places a **4:3 preview on the left** and three narrow **fin**, **body**,
 and **head** slots in one recessed control panel on the right. The full-width
@@ -155,7 +165,19 @@ God rays fan out from the upper-left surface glow, slowly sway and shimmer, and
 fade into deeper water. Particles rise at varied speeds and drift sideways and
 through depth with the current, fading as they recycle through the volume.
 
+The **Trashcan** desktop app opens a Windows 98 directory of CV text files.
+Paste UTF-8 `.txt` files into `src/asset/cv/`; every file is discovered automatically
+and opens in its own editable Notepad window. Replace the included templates
+with your own CVs. File icons and the editor text area use `--window-depth: 20px`.
+Notepad supports word wrap, selecting all text, and **File → Save as…** / **Ctrl+S**
+to download edits. Edits remain available while opening and closing windows in
+the current session; source files change only when you edit them in the repository.
+Both new windows use the installed [98.css](https://github.com/jdan/98.css), scoped
+to `.win98` by `postcss.config.js` so it coexists with the other desktop apps.
+
 Reusable windows live in `src/ui/window.ts` and use 7.css for Windows 7 styling.
+Pass `"98"` as the third argument for Windows 98 chrome. Windows come to the front
+when clicked or focused.
 Pass a title and a content element:
 
 ```ts

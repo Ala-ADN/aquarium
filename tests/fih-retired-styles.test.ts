@@ -25,7 +25,7 @@ const retired = { ...DEFAULT_APPEARANCE, shape: "sail" as const, finShape: "ribb
 
 describe("retained style definitions", () => {
   it("restores retired styles in the actual editor and retains them when releasing color edits", () => {
-    document.body.innerHTML = '<footer id="fih-footer"></footer>';
+    document.body.innerHTML = '<main id="portfolio-content"></main>';
     localStorage.clear();
     localStorage.setItem(VISIT_STORAGE_KEY, JSON.stringify({ schemaVersion: 1, elapsed: 20000, fih: serializeFihDesign(retired) }));
     vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });

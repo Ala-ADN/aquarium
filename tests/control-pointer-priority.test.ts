@@ -147,4 +147,47 @@ describe("3D control click priority", () => {
     expect(click(plane).defaultPrevented).toBe(false);
     expect(action).not.toHaveBeenCalled();
   });
+
+  it("preserves native summary activation over a projected button", () => {
+    const action = vi.fn();
+    button.addEventListener("click", action);
+    const details = document.createElement("details");
+    const summary = document.createElement("summary");
+    summary.textContent = "Format";
+    details.append(summary);
+    form.append(details);
+    expect(pointer(summary, "pointerdown").defaultPrevented).toBe(false);
+    expect(click(summary).defaultPrevented).toBe(false);
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("does not redirect clicks from a window in front to a button behind it", () => {
+    const action = vi.fn();
+    button.addEventListener("click", action);
+    plane.className = "glass-window";
+    const otherWindow = document.createElement("section");
+    otherWindow.className = "glass-window";
+    const foreground = document.createElement("div");
+    otherWindow.append(foreground);
+    document.body.append(otherWindow);
+    expect(pointer(foreground, "pointerdown").defaultPrevented).toBe(false);
+    expect(click(foreground).defaultPrevented).toBe(false);
+    expect(action).not.toHaveBeenCalled();
+  });
+
+  it("ignores hidden controls even when they report nonempty bounds", () => {
+    const action = vi.fn();
+    button.addEventListener("click", action);
+    button.hidden = true;
+    expect(pointer(plane, "pointerdown").defaultPrevented).toBe(false);
+    click(plane);
+    expect(action).not.toHaveBeenCalled();
+    button.hidden = false;
+    const menu = document.createElement("details");
+    form.append(menu);
+    menu.append(button);
+    expect(pointer(plane, "pointerdown").defaultPrevented).toBe(false);
+    click(plane);
+    expect(action).not.toHaveBeenCalled();
+  });
 });

@@ -2,7 +2,7 @@ import type { FihAppearance } from "../types";
 import { fihTemplate, resolveFihColors } from "../fih/appearance";
 import { createFihParts } from "../fih/parts";
 
-export function createFihFaviconUpdater() {
+export function createFihFaviconUpdater(onUpdate?: (url: string) => void) {
   let previous = "";
   return (appearance: FihAppearance) => {
     const key = JSON.stringify(appearance);
@@ -38,5 +38,6 @@ export function createFihFaviconUpdater() {
     }
     link.type = "image/svg+xml";
     link.href = `data:image/svg+xml,${encodeURIComponent(svg)}`;
+    onUpdate?.(link.href);
   };
 }

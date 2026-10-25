@@ -50,8 +50,9 @@ beforeEach(() => {
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
   vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
   localStorage.clear();
-  document.body.innerHTML = '<footer id="fih-footer"></footer>';
+  document.body.innerHTML = '<main id="portfolio-content"></main>';
   creator = mountFihCreator(vi.fn());
+  document.querySelector<HTMLButtonElement>(".fih-desktop-icon")!.click();
   panel = document.querySelector<HTMLElement>("#fih-creator")!;
   Object.defineProperty(panel, "offsetWidth", { value: 760 });
   vi.spyOn(panel, "getBoundingClientRect").mockImplementation(() => {

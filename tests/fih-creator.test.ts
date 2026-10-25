@@ -1,11 +1,16 @@
 // @vitest-environment happy-dom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { mountFihCreator } from "../src/ui/fih-creator";
+import { mountFihCreator as mountDesktopFihCreator } from "../src/ui/fih-creator";
 import { VISIT_STORAGE_KEY, PREVIOUS_STORAGE_KEY, LEGACY_STORAGE_KEY } from "../src/fih/visit";
 import { DEFAULT_APPEARANCE, FIH_PALETTE } from "../src/fih/appearance";
 import { drawFihPreview } from "../src/ui/fih-preview";
 
 vi.mock("../src/ui/fih-preview", () => ({ drawFihPreview: vi.fn() }));
+function mountFihCreator(...args: Parameters<typeof mountDesktopFihCreator>) {
+  const app = mountDesktopFihCreator(...args);
+  document.querySelector<HTMLButtonElement>(".fih-desktop-icon")!.click();
+  return app;
+}
 let creator: ReturnType<typeof mountFihCreator>;
 let intersect: IntersectionObserverCallback;
 const find = <T extends HTMLElement>(selector: string) => document.querySelector<T>(selector)!;
@@ -42,7 +47,7 @@ beforeEach(() => {
     setTimeout(() => callback(performance.now()), 16)
   );
   vi.stubGlobal("cancelAnimationFrame", (id: number) => clearTimeout(id));
-  document.body.innerHTML = '<footer id="fih-footer"></footer>';
+  document.body.innerHTML = '<main id="portfolio-content"></main>';
   localStorage.clear();
   vi.stubGlobal(
     "IntersectionObserver",
@@ -70,6 +75,39 @@ afterEach(() => {
 });
 
 describe("three-lane creator", () => {
+  it("starts closed, preserves other desktop apps, and keeps draft icons in sync after reopening", () => {
+    const otherApp = document.createElement("section");
+    find("#portfolio-content").append(otherApp);
+    creator = mountDesktopFihCreator(vi.fn());
+    const window = find("#fih-creator");
+    const launcher = find<HTMLButtonElement>(".fih-desktop-icon");
+    const icon = launcher.querySelector("img")!;
+    const favicon = () => document.querySelector<HTMLLinkElement>('link[rel="icon"]')!.href;
+    expect(otherApp.isConnected).toBe(true);
+    expect(window.hidden).toBe(true);
+    expect(icon.src).toBe(favicon());
+    launcher.click();
+    expect(window.hidden).toBe(false);
+    const initialIcon = icon.src;
+    inputValue("#fih-head-picker", "#123456");
+    expect(icon.src).not.toBe(initialIcon);
+    expect(icon.src).toBe(favicon());
+    expect(find<HTMLImageElement>(".fih-title-icon").src).toBe(icon.src);
+    window.querySelector<HTMLButtonElement>('[aria-label="Minimize"]')!.click();
+    expect(window.hidden).toBe(true);
+    launcher.click();
+    expect(find<HTMLInputElement>("#fih-head-picker").value).toBe("#123456");
+    window.querySelector<HTMLButtonElement>('[aria-label="Maximize"]')!.click();
+    expect(window.hasAttribute("data-maximized")).toBe(true);
+    window.querySelector<HTMLButtonElement>('[aria-label="Restore"]')!.click();
+    expect(window.hasAttribute("data-maximized")).toBe(false);
+    window.querySelector<HTMLButtonElement>('[aria-label="Close"]')!.click();
+    expect(window.hidden).toBe(true);
+    expect(document.activeElement).toBe(launcher);
+    creator.destroy();
+    expect(launcher.isConnected).toBe(false);
+    expect(otherApp.isConnected).toBe(true);
+  });
   it("retries sharing through update and shows the save status immediately to its left", () => {
     const saved = { ...DEFAULT_APPEARANCE, count: 2 };
     localStorage.setItem(VISIT_STORAGE_KEY, JSON.stringify({ elapsed: 20_000, fih: saved }));
@@ -104,7 +142,7 @@ describe("three-lane creator", () => {
     expect(reel("body").getAttribute("aria-valuemax")).toBe("4");
     expect(reel("head").getAttribute("aria-valuemax")).toBe("3");
     vi.advanceTimersByTime(10_000);
-    expect(find<HTMLButtonElement>(".fih-release").disabled).toBe(true);
+    expect(find<HTMLButtonElement>(".fih-release").disabled).toBe(false);
     reel("fin").focus();
     choose("fin", "shape", "fork");
     choose("body", "shape", "round");
