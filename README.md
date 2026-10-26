@@ -2,7 +2,7 @@
 
 Run `pnpm install`, then `pnpm dev`. Use `pnpm build` to make `dist/`.
 
-The `deploy` branch adds optional Firebase shared saves and GitHub Pages hosting.
+The `main` branch includes optional Firebase shared saves and deploys to GitHub Pages after checks pass.
 Follow [the deployment guide](docs/deployment.md) to create the free Firebase
 project, enable App Check, and configure Pages. Without Firebase configuration,
 the app keeps working with local saves. Run `pnpm test:rules` for the emulator
