@@ -43,7 +43,7 @@ To publish project demos, place compressed exports and posters in
   description: "A short description of what the project does.", duration: 79.168 }
 ```
 
-No project videos or posters load at startup. Opening VLC loads only the selected
+No project videos or posters load at startup. Opening VLC shows the playlist and loads only the selected
 poster; a video's URL is attached on playback. All included demos retain stereo audio.
 Other playlist entries do not fetch video data or metadata. Media paths respect
 Vite's base URL for GitHub Pages. Playlist durations are recorded in seconds in
@@ -51,7 +51,7 @@ the library; the current video's decoded duration takes precedence during playba
 Keep original recordings in `media-originals/` or outside the repository.
 The player remains on its cone screen until demos are added. Autoplay is off:
 selecting a project or using Previous/Next leaves it paused until Play is pressed.
-Each video stops at its end without starting another project. It pauses when minimized,
+When a video ends, the next project’s thumbnail appears, paused until Play is pressed. It pauses when minimized,
 closed, scrolled out of view, or the browser tab is hidden.
 Space toggles playback while the player is focused; Left/Right seek, M mutes,
 and Ctrl+L opens the playlist. N/P select the next/previous

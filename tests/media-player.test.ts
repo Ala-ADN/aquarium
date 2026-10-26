@@ -5,7 +5,7 @@ import type { MediaItem } from "../src/media/library";
 
 const items: MediaItem[] = [
   { id: "first", title: "First demo", src: "media/first/demo.mp4", poster: "media/first/poster.webp" },
-  { id: "second", title: "Second demo", src: "media/second/demo.mp4" },
+  { id: "second", title: "Second demo", src: "media/second/demo.mp4", poster: "media/second/poster.webp" },
 ];
 let player: ReturnType<typeof mountMediaPlayer>;
 let host: HTMLElement;
@@ -49,7 +49,6 @@ describe("desktop media player", () => {
       { ...items[0], description: "Explore a knowledge graph.", duration: 79.168, sourceUrl: "https://github.com/example/first" },
       { ...items[1], description: "Compare source perspectives.", duration: 90.024, sourceUrl: "https://github.com/example/second" },
     ]);
-    button("playlist").click();
     const descriptions = [...host.querySelectorAll(".vlc-playlist-description")].map(el => el.textContent);
     expect(descriptions).toEqual(["Explore a knowledge graph.", "Compare source perspectives."]);
     const durations = () => [...host.querySelectorAll(".vlc-playlist-duration")].map(el => el.textContent);
@@ -79,6 +78,8 @@ describe("desktop media player", () => {
     expect(video.volume).toBe(1);
     host.querySelector<HTMLButtonElement>(".vlc-desktop-icon")!.click();
     expect(player.element.hidden).toBe(false);
+    expect(host.querySelector<HTMLElement>(".vlc-playlist")!.hidden).toBe(false);
+    expect(button("playlist").getAttribute("aria-pressed")).toBe("true");
     expect(video.getAttribute("src")).toBeNull();
     expect(video.poster).toContain("media/first/poster.webp");
   });
@@ -98,7 +99,7 @@ describe("desktop media player", () => {
     expect(video.getAttribute("src")).toBeNull();
     expect(video.paused).toBe(true);
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
-    expect(video.getAttribute("poster")).toBeNull();
+    expect(video.poster).toContain("media/second/poster.webp");
     expect(host.querySelector(".vlc-status")!.textContent).toBe("Second demo");
     button("play").click();
     expect(video.src).toContain("media/second/demo.mp4");
@@ -110,7 +111,6 @@ describe("desktop media player", () => {
     expect(button("github").disabled).toBe(true);
     button("play").click();
     expect(host.querySelector("video")!.getAttribute("src")).toBeNull();
-    button("playlist").click();
     expect(host.querySelector(".vlc-playlist-empty")!.textContent).toBe("Project demos coming soon.");
   });
 
@@ -219,12 +219,15 @@ describe("desktop media player", () => {
     expect(video.currentTime).toBe(75);
   });
 
-  it("stops at the end of a video without advancing or playing another project", () => {
+  it("advances at the end to the next thumbnail without loading or playing it", () => {
     player = mountMediaPlayer(host, items);
     button("play").click();
     const video = host.querySelector("video")!;
     video.dispatchEvent(new Event("ended"));
-    expect(video.src).toContain("first/demo.mp4");
+    expect(video.getAttribute("src")).toBeNull();
+    expect(video.poster).toContain("media/second/poster.webp");
+    expect(host.querySelector(".vlc-status")!.textContent).toBe("Second demo");
+    expect(host.querySelector<HTMLElement>(".vlc-playlist")!.hidden).toBe(true);
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
     expect(video.paused).toBe(true);
     expect(video.loop).toBe(false);
@@ -232,7 +235,6 @@ describe("desktop media player", () => {
 
   it("selects a playlist entry while paused and loads it only on Play", () => {
     player = mountMediaPlayer(host, items);
-    button("playlist").click();
     expect(host.querySelector<HTMLElement>(".vlc-playlist")!.hidden).toBe(false);
     expect(button("playlist").getAttribute("aria-pressed")).toBe("true");
     host.querySelectorAll<HTMLButtonElement>(".vlc-playlist-item")[1].click();

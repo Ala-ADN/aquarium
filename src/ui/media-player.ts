@@ -81,7 +81,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     <div class="vlc-stage">
       <video class="vlc-video" preload="none" playsinline aria-label="Project demo"></video>
       <div class="vlc-idle" aria-hidden="true"></div>
-      <section class="vlc-playlist" aria-label="Playlist" hidden>
+      <section class="vlc-playlist" aria-label="Playlist">
         <div class="vlc-playlist-heading"><strong>Project demos</strong><span class="vlc-item-count"></span></div>
         <div class="vlc-playlist-columns"><span>Title</span><span>Description</span><span>Duration</span><span>Source</span></div>
         <ol class="vlc-playlist-items"></ol>
@@ -99,7 +99,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
           <button type="button" class="vlc-tool" data-action="next" aria-label="Next"></button>
         </span>
         <span class="vlc-tool-group vlc-secondary-tools">
-          <button type="button" class="vlc-tool" data-action="playlist" aria-label="Show playlist" aria-pressed="false"></button>
+          <button type="button" class="vlc-tool" data-action="playlist" aria-label="Hide playlist" aria-pressed="true"></button>
           <button type="button" class="vlc-tool vlc-github" data-action="github" aria-label="Open project on GitHub" disabled></button>
         </span>
         <div class="vlc-volume">
@@ -293,7 +293,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     update();
   }
 
-  function select(index: number) {
+  function select(index: number, showVideo = true) {
     if (!queue[index]) return;
     unload();
     selected = index;
@@ -301,12 +301,13 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     setStatus(projectStatus());
     renderPlaylist();
     update();
-    if (!playlist.hidden) act("playlist");
+    if (showVideo && !playlist.hidden) act("playlist");
   }
 
   async function start() {
     const item = current();
     if (!item) return;
+    if (!playlist.hidden) act("playlist");
     if (loadedId !== item.id) {
       loadedId = item.id;
       video.src = mediaUrl(item.src);
@@ -483,6 +484,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   video.addEventListener("loadedmetadata", () => { renderPlaylist(); update(); }, opts);
   video.addEventListener("ended", () => {
     video.pause();
+    advance(1);
     update();
   }, opts);
   video.addEventListener("error", () => {
@@ -575,7 +577,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   }, opts);
 
   renderPlaylist();
-  if (selected >= 0) select(selected);
+  if (selected >= 0) select(selected, false);
   else update();
 
   return {
