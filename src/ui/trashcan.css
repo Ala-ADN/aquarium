@@ -204,7 +204,10 @@
   width: 100%;
   min-width: 0;
   height: var(--notepad-text-height, 380px);
-  max-height: max(64px, calc(100dvh - var(--notepad-top) - var(--notepad-chrome-height, 74px) - 24px));
+  max-height: max(
+    64px,
+    calc(100dvh - var(--notepad-top) - var(--notepad-chrome-height, 74px) - 24px)
+  );
   min-height: 64px;
   margin: 0;
   padding: 8px;
@@ -213,7 +216,7 @@
   background: #fff;
   color: #000;
   font:
-    13px/1.4 "Courier New",
+    13px/1.2 "Courier New",
     monospace;
   scrollbar-width: auto;
 }
