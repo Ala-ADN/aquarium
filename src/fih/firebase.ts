@@ -82,9 +82,18 @@ export async function connectFirebaseAquarium(config: AquariumFirebaseConfig, ca
         const ownerId = await (await ensureAuth()).ownerId();
         // The transaction is restricted to this visitor's record. Concurrent visitors
         // never replace the tank; retries preserve the original creation timestamp.
+        let validationError: unknown;
         await runTransaction(ref(database, `fih/${ownerId}`), (current) => {
-          return createSharedFihRecord(current, design, serverTimestamp());
+          // Retry callbacks run asynchronously inside the SDK. Abort first so
+          // validation failures reject save() instead of escaping the callback.
+          try {
+            return createSharedFihRecord(current, design, serverTimestamp());
+          } catch (error) {
+            validationError = error;
+            return undefined;
+          }
         }, { applyLocally: false });
+        if (validationError) throw validationError;
       },
       close() {
         closed = true;
