@@ -122,7 +122,7 @@ describe("three-lane creator", () => {
     expect(onRelease).not.toHaveBeenCalled();
     reel("body").focus();
     submit();
-    expect(onRelease).toHaveBeenCalledWith({ ...saved, count: 3 });
+    expect(onRelease).toHaveBeenCalledWith({ ...saved, count: 2 });
     creator.setSaveStatus("saving");
     expect(find(".fih-save-status").textContent).toBe("sharing…");
     expect(status.hidden).toBe(false);
@@ -130,7 +130,7 @@ describe("three-lane creator", () => {
     expect(onRelease).toHaveBeenCalledOnce();
     submit();
     expect(onRelease).toHaveBeenCalledTimes(2);
-    expect(onRelease).toHaveBeenLastCalledWith({ ...saved, count: 3 });
+    expect(onRelease).toHaveBeenLastCalledWith({ ...saved, count: 2 });
     creator.setSaveStatus("saved");
     expect(find(".fih-save-status").textContent).toBe("shared");
   });
@@ -166,7 +166,7 @@ describe("three-lane creator", () => {
       finSize: 1.25,
       bodySize: 0.8,
       headSize: 1.4,
-      count: 3,
+      count: 2,
     });
     expect(find(".fih-release").textContent).toBe("update");
     const saved = JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih;
@@ -208,7 +208,7 @@ describe("three-lane creator", () => {
     reel("body").focus();
     submit();
     expect(display).toHaveBeenCalledOnce();
-    expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih.count).toBe(3);
+    expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih.count).toBe(2);
     expect(animate).toHaveBeenCalledTimes(2);
     expect(find(".fih-preview").hasAttribute("data-releasing")).toBe(true);
     inputValue("#fih-head-size", "1.25");
@@ -227,19 +227,19 @@ describe("three-lane creator", () => {
     expect(text.parentElement).toBe(find(".fih-release").parentElement);
     vi.advanceTimersByTime(15_000);
     expect(message.textContent).toBe("you spent 15 seconds here, thanks,");
-    expect(count.textContent).toBe("3.4647515087732472");
+    expect(count.textContent).toBe(`${1 + 9 * Math.sqrt(15 / 600)}`);
     vi.advanceTimersByTime(123);
     document.dispatchEvent(new Event("visibilitychange"));
-    expect(count.textContent).toBe("3.4748363582265394");
+    expect(count.textContent).toBe(`${1 + 9 * Math.sqrt(15.123 / 600)}`);
     vi.advanceTimersByTime(110_000);
     expect(Number(count.textContent)).toBeLessThan(10);
     expect(message.textContent).toBe("you spent 125 seconds here, thanks,");
-    vi.advanceTimersByTime(75_000);
+    vi.advanceTimersByTime(475_000);
     expect(count.textContent).toBe("MAX");
-    expect(message.textContent).toBe("you spent 200 seconds here, thanks,");
+    expect(message.textContent).toBe("you spent 600 seconds here, thanks,");
     creator.destroy();
     creator = mountFihCreator(vi.fn());
-    expect(find(".fih-progress-message").textContent).toBe("you spent 200 seconds here, thanks,");
+    expect(find(".fih-progress-message").textContent).toBe("you spent 600 seconds here, thanks,");
     expect(find("#fih-count").textContent).toBe("MAX");
   });
   it("wraps individual reels without changing the other columns", () => {
@@ -470,12 +470,12 @@ describe("three-lane creator", () => {
     hidden = true;
     document.dispatchEvent(new Event("visibilitychange"));
     vi.advanceTimersByTime(30_000);
-    expect(find("#fih-count").textContent).toBe("2.4230249470757705");
+    expect(find("#fih-count").textContent).toBe(`${1 + 9 * Math.sqrt(5 / 600)}`);
     hidden = false;
     document.dispatchEvent(new Event("visibilitychange"));
     vi.advanceTimersByTime(5000);
-    expect(find("#fih-count").textContent).toBe("3.0124611797498106");
-    vi.advanceTimersByTime(200_000);
+    expect(find("#fih-count").textContent).toBe(`${1 + 9 * Math.sqrt(10 / 600)}`);
+    vi.advanceTimersByTime(600_000);
     reel("body").focus();
     submit();
     expect(display.mock.lastCall?.[0].count).toBe(10);
@@ -634,7 +634,7 @@ describe("three-lane creator", () => {
     expect(requestSubmit).toHaveBeenCalledOnce();
     expect(display).toHaveBeenCalledOnce();
     expect(release.textContent).toBe("update");
-    expect(display.mock.lastCall?.[0].count).toBe(3);
+    expect(display.mock.lastCall?.[0].count).toBe(2);
   });
   it("updates and disposes the live preview with the draft", () => {
     const live = { update: vi.fn(), resize: vi.fn(), destroy: vi.fn() };

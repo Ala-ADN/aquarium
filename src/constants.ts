@@ -7,7 +7,7 @@ export const FIH_FADE_IN_MS = 600;
 export const BOUNDS = 800;
 export const BOUNDS_HALF = BOUNDS / 2;
 export const DEFAULT_FIN_SIZE = 2;
-export const FIH_EARNING_DURATION_MS = 200_000;
+export const FIH_EARNING_DURATION_MS = 600_000;
 export const MAX_VISITOR_FIH = 10;
 // sRGB midpoint of the seeded school's teal color variation.
 export const DEFAULT_FIH_COLOR = "#25a4aa";

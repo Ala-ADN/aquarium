@@ -27,12 +27,12 @@ describe("versioned fih compatibility", () => {
   it("upgrades v1/v2/v3 local saves with pinned historical defaults and retains originals", () => {
     const expectedDefaults = {
       shape: "classic", finShape: "triangle", headShape: "pointed", color: "#c8bfe7",
-      finColor: null, headColor: null, finSize: 1, bodySize: 1, headSize: 1, pattern: "plain", count: 4,
+      finColor: null, headColor: null, finSize: 1, bodySize: 1, headSize: 1, pattern: "plain", count: 3,
     };
     const cases = [
       { key: LEGACY_STORAGE_KEY, value: saves.visitV1, expected: expectedDefaults },
       { key: PREVIOUS_STORAGE_KEY, value: saves.visitV2, expected: { ...expectedDefaults, shape: "sail", finColor: "#b5e61d" } },
-      { key: V3_STORAGE_KEY, value: { elapsed: 40000, fih: saves.unversioned.design }, expected: saves.unversioned.design },
+      { key: V3_STORAGE_KEY, value: { elapsed: 40000, fih: saves.unversioned.design }, expected: { ...saves.unversioned.design, count: 3 } },
     ];
     for (const { key, value, expected } of cases) {
       const storage = localStorage();

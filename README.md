@@ -66,7 +66,7 @@ The fih creator opens in its own draggable desktop window. On phone screens,
 the page scrolls to show the full window. Window surfaces retain visible overflow
 and their 3D parallax at every screen size.
 With the page visible, visitors earn fih according to
-`f(x) = 1 + 9 * sqrt(x / 200)`, where x is seconds, capped at 10 after 200 seconds.
+`f(x) = 1 + 9 * sqrt(x / 600)`, where x is seconds, capped at 10 after 600 seconds (10 minutes).
 Opening the creator lets them release the whole-number portion of their allowance.
 
 The creator places a **4:3 preview on the left** and three narrow **fin**, **body**,

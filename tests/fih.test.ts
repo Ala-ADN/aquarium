@@ -104,7 +104,7 @@ describe("visitor persistence and earning", () => {
   it("migrates both fih and fish legacy saves without changing appearance", () => {
     for (const property of ["fih", "fish"]) {
       const visit = parseVisit(JSON.stringify({ elapsed: 25_000, [property]: { shape: "round", color: "#ABCDEF", count: 5 } }), 1);
-      expect(visit).toEqual({ elapsed: 25_000, fih: { ...DEFAULT_APPEARANCE, shape: "round", color: "#abcdef", count: 4 } });
+      expect(visit).toEqual({ elapsed: 25_000, fih: { ...DEFAULT_APPEARANCE, shape: "round", color: "#abcdef", count: 2 } });
     }
   });
   it("maps removed shapes to their retained equivalents in every save version", () => {
@@ -118,7 +118,7 @@ describe("visitor persistence and earning", () => {
     const data = new Map([[LEGACY_STORAGE_KEY, encode({ shape: "long", color: "#123456", count: 1 })]]);
     const storage = { getItem: (key: string) => data.get(key) ?? null, setItem: (key: string, value: string) => { data.set(key, value); } };
     const old = data.get(LEGACY_STORAGE_KEY);
-    const visit = { elapsed: 200_000, fih: { ...DEFAULT_APPEARANCE, shape: "sail" as const, finColor: "#abcdef", headColor: "#123456", finShape: "fan" as const, headShape: "round" as const, headSize: 1.2, count: 10 } };
+    const visit = { elapsed: 600_000, fih: { ...DEFAULT_APPEARANCE, shape: "sail" as const, finColor: "#abcdef", headColor: "#123456", finShape: "fan" as const, headShape: "round" as const, headSize: 1.2, count: 10 } };
     expect(saveVisit(storage, visit)).toBe(true);
     expect(readVisit(storage)).toEqual(visit);
     expect(data.get(LEGACY_STORAGE_KEY)).toBe(old);
@@ -138,17 +138,17 @@ describe("visitor persistence and earning", () => {
   });
   it("counts only visible time and caps the allowance at ten", () => {
     expect(advanceVisit(9000, 5000, false)).toBe(9000);
-    expect(earnedFih(advanceVisit(9000, 1000, true))).toBe(3);
+    expect(earnedFih(advanceVisit(9000, 1000, true))).toBe(2);
     expect(advanceVisit(99_000, 60_000, true)).toBe(159_000);
     expect(parseVisit(encode(null, 159_000))?.elapsed).toBe(159_000);
-    expect(earnedFih(159_000)).toBe(9);
-    expect(earnedFih(100_000)).toBe(7);
-    expect(earnedFih(200_000)).toBe(10);
-    expect(earnedFih(500_000)).toBe(10);
+    expect(earnedFih(159_000)).toBe(5);
+    expect(earnedFih(100_000)).toBe(4);
+    expect(earnedFih(600_000)).toBe(10);
+    expect(earnedFih(900_000)).toBe(10);
   });
   it.each([
-    [-1000, 1, 1], [0, 1, 1], [2000, 1.9, 1], [50_000, 5.5, 5],
-    [199_999, 9.999977499971875, 9], [200_000, 10, 10], [500_000, 10, 10],
+    [-1000, 1, 1], [0, 1, 1], [6000, 1.9, 1], [150_000, 5.5, 5],
+    [599_997, 9.999977499971875, 9], [600_000, 10, 10], [1_500_000, 10, 10],
   ])("earns the square-root allowance at %i milliseconds", (elapsed, allowance, whole) => {
     expect(fihAllowance(elapsed)).toBeCloseTo(allowance, 12);
     expect(earnedFih(elapsed)).toBe(whole);

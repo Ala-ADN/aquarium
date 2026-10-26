@@ -41,8 +41,8 @@ describe("retained style definitions", () => {
       color.dispatchEvent(new Event("input", { bubbles: true }));
       bodyReel.focus();
       document.querySelector("form")!.dispatchEvent(new Event("submit", { cancelable: true }));
-      expect(display).toHaveBeenLastCalledWith({ ...retired, color: "#abcdef", count: 3 });
-      expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih).toEqual(serializeFihDesign({ ...retired, color: "#abcdef", count: 3 }));
+      expect(display).toHaveBeenLastCalledWith({ ...retired, color: "#abcdef", count: 2 });
+      expect(JSON.parse(localStorage.getItem(VISIT_STORAGE_KEY)!).fih).toEqual(serializeFihDesign({ ...retired, color: "#abcdef", count: 2 }));
       const previous = document.querySelector<HTMLButtonElement>('[data-part="fin"] [data-direction="-1"]')!;
       previous.click();
       expect(document.querySelector<HTMLElement>('[data-part="fin"] .fih-reel')!.dataset.shape).toBe("fan");
