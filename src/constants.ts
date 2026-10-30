@@ -12,6 +12,53 @@ export const MAX_VISITOR_FIH = 10;
 // sRGB midpoint of the seeded school's teal color variation.
 export const DEFAULT_FIH_COLOR = "#25a4aa";
 export const FIH_FIN_SHADE = 0.65;
+// Lever metalness multiplier: 0 = nonmetallic, 1 = full metallic finish.
+export const FIH_LEVER_METALLIC_SHADING = 1;
+// Lever environment reflections: 0 = off, 1 = default, up to 3 = stronger.
+export const FIH_LEVER_REFLECTION = 1;
+// Lever dimensions before the overall scale; angles are in degrees.
+export const FIH_LEVER_GEOMETRY = {
+  scale: 1.2,
+  mountRadius: 15,
+  mountLength: 30,
+  mountSegments: 32,
+  armRadius: 4.5,
+  lowerArmLength: 33,
+  upperArmLength: 100,
+  bendAngle: 13,
+  armSegments: 24,
+  sphereRadius: 20,
+  sphereWidthSegments: 16,
+  sphereHeightSegments: 12,
+  sphereAxisOffset: 0,
+} as const;
+export const FIH_LEVER_PLACEMENT = {
+  horizontalOffset: -5,
+  verticalOffset: 0,
+  depth: -1,
+  mountAngle: 14.32394487827058,
+  restAngle: 12,
+  pullAngle: 110,
+} as const;
+export const FIH_LEVER_SHADING = {
+  smoothShading: true,
+  armColor: "#b9c8d4",
+  mountColor: "#56616c",
+  sphereColor: "#d9364b",
+  armMetalness: 0.8,
+  mountMetalness: 0.8,
+  sphereMetalness: 0.65,
+  armRoughness: 0.4,
+  mountRoughness: 0.4,
+  sphereRoughness: 0.59,
+  ambientLight: 1.3,
+  keyLight: 2.5,
+} as const;
+export const FIH_LEVER_MOTION = {
+  pullDistance: 180,
+  triggerThreshold: 0.7,
+  returnDuration: 200,
+} as const;
 
 // Camera distance is in world units; FOV is in degrees.
 export const CAMERA_SETTINGS = { fov: 75, distance: 350 } as const;

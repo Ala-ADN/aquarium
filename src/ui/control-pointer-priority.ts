@@ -69,6 +69,8 @@ export function prioritizeControlClicks(container: HTMLElement, signal: AbortSig
     event.stopImmediatePropagation();
     if (!accepted) return;
     control.focus({ preventScroll: true });
+    // Drag controls require their own pointer gesture; a forwarded click must not activate them.
+    if (control.matches("[data-drag-control]")) return;
     if (control instanceof HTMLInputElement && typeof control.showPicker === "function") {
       try { control.showPicker(); return; } catch { /* Older browsers can use native click activation. */ }
     }

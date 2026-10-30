@@ -128,7 +128,7 @@ export function createWindow(title: string, content: HTMLElement, theme: "7" | "
     // Keep the full width and the drag handle within reach.
     const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
     place(
-      clamp(nextX, 8 - left, innerWidth - 8 - left - element.offsetWidth),
+      clamp(nextX, 8 - left, innerWidth - 8 - left - element.offsetWidth - Number(element.dataset.rightOverhang ?? 0)),
       clamp(nextY, 8 - top, innerHeight - 8 - top - handle.offsetHeight)
     );
   }

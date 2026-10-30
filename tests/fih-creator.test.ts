@@ -4,6 +4,7 @@ import { mountFihCreator as mountDesktopFihCreator } from "../src/ui/fih-creator
 import { VISIT_STORAGE_KEY, PREVIOUS_STORAGE_KEY, LEGACY_STORAGE_KEY } from "../src/fih/visit";
 import { DEFAULT_APPEARANCE, FIH_PALETTE } from "../src/fih/appearance";
 import { drawFihPreview } from "../src/ui/fih-preview";
+import { FIH_LEVER_MOTION } from "../src/constants";
 
 vi.mock("../src/ui/fih-preview", () => ({ drawFihPreview: vi.fn() }));
 function mountFihCreator(...args: Parameters<typeof mountDesktopFihCreator>) {
@@ -39,6 +40,17 @@ const submit = () =>
   find<HTMLFormElement>("form").dispatchEvent(
     new Event("submit", { bubbles: true, cancelable: true })
   );
+const pullLever = (distance: number = FIH_LEVER_MOTION.pullDistance) => {
+  const lever = find<HTMLButtonElement>(".fih-lever");
+  const pointer = (type: string, y: number) =>
+    new PointerEvent(type, {
+      pointerId: 7, pointerType: "mouse", isPrimary: true, button: 0,
+      clientX: 20, clientY: y, bubbles: true, cancelable: true,
+    });
+  lever.dispatchEvent(pointer("pointerdown", 20));
+  window.dispatchEvent(pointer("pointermove", 20 + distance));
+  window.dispatchEvent(pointer("pointerup", 20 + distance));
+};
 beforeEach(() => {
   vi.useFakeTimers({
     toFake: ["setInterval", "clearInterval", "setTimeout", "clearTimeout", "performance", "Date"],
@@ -189,7 +201,10 @@ describe("three-lane creator", () => {
     expect(document.querySelectorAll('.fih-lane input[type="range"]')).toHaveLength(3);
     const machine = find(".fih-machine");
     expect(machine.querySelectorAll(".fih-lane")).toHaveLength(3);
-    expect(machine.querySelector(".fih-spin")).not.toBeNull();
+    expect(machine.querySelector(".fih-lever")).toBeNull();
+    expect(find(".fih-lever").closest(".fih-window")).toBe(find("#fih-creator"));
+    expect(find(".fih-lever canvas").getAttribute("aria-hidden")).toBe("true");
+    expect(machine.querySelector(".fih-spin")).toBeNull();
     expect(document.querySelector(".fih-machine-heading")).toBeNull();
     for (const part of ["fin", "body", "head"]) {
       expect(find(`#fih-${part}-picker`).getAttribute("aria-label")).toBe(`Custom ${part} color`);
@@ -257,7 +272,7 @@ describe("three-lane creator", () => {
     choose("head", "shape", "round");
     inputValue("#fih-head-size", "1.5");
     vi.spyOn(Math, "random").mockReturnValue(0);
-    find<HTMLButtonElement>(".fih-spin").click();
+    pullLever();
     vi.advanceTimersByTime(2600);
     expect(shape("head")).toBe("pointed");
     expect(display).not.toHaveBeenCalled();
@@ -277,11 +292,28 @@ describe("three-lane creator", () => {
       finColor: FIH_PALETTE[0].hex,
     });
   });
+  it("spins only after a sufficient pull and resets the lever after release", () => {
+    creator = mountFihCreator(vi.fn());
+    const lever = find<HTMLButtonElement>(".fih-lever");
+    expect(lever.getAttribute("aria-label")).toContain("Pull lever down");
+    const threshold = Math.ceil(FIH_LEVER_MOTION.pullDistance * FIH_LEVER_MOTION.triggerThreshold);
+    pullLever(threshold - 1);
+    expect(document.querySelectorAll("[data-spinning]")).toHaveLength(0);
+    expect(lever.hasAttribute("data-pulling")).toBe(false);
+    lever.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 1 }));
+    expect(document.querySelectorAll("[data-spinning]")).toHaveLength(0);
+    pullLever(threshold);
+    expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
+    expect(lever.hasAttribute("data-pulling")).toBe(false);
+    vi.advanceTimersByTime(2600);
+    lever.click(); // Keyboard and assistive activation produces a zero-detail click.
+    expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
+  });
   it("animates reel motion and slot depth, then lands each column separately", () => {
     const display = vi.fn();
     creator = mountFihCreator(display);
     vi.spyOn(Math, "random").mockReturnValue(0);
-    find<HTMLButtonElement>(".fih-spin").click();
+    pullLever();
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
     expect(find("form").getAttribute("aria-busy")).toBe("true");
     vi.advanceTimersByTime(240);
@@ -305,10 +337,9 @@ describe("three-lane creator", () => {
   });
   it("restarts a spin and lets manual input stop it without being overwritten later", () => {
     creator = mountFihCreator(vi.fn());
-    const spin = find<HTMLButtonElement>(".fih-spin");
-    spin.click();
+    pullLever();
     vi.advanceTimersByTime(320);
-    spin.click();
+    pullLever();
     vi.advanceTimersByTime(320);
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
     inputValue("#fih-head-size", "1.35");
@@ -326,7 +357,7 @@ describe("three-lane creator", () => {
     vi.advanceTimersByTime(10_000);
     reel("fin").focus();
     vi.spyOn(Math, "random").mockReturnValue(0);
-    find<HTMLButtonElement>(".fih-spin").click();
+    pullLever();
     vi.advanceTimersByTime(200);
     submit();
     expect(display).toHaveBeenCalledTimes(1);
@@ -344,7 +375,7 @@ describe("three-lane creator", () => {
     let hidden = false;
     vi.spyOn(document, "hidden", "get").mockImplementation(() => hidden);
     creator = mountFihCreator(vi.fn());
-    find<HTMLButtonElement>(".fih-spin").click();
+    pullLever();
     vi.advanceTimersByTime(240);
     hidden = true;
     document.dispatchEvent(new Event("visibilitychange"));
@@ -358,8 +389,7 @@ describe("three-lane creator", () => {
   it("completes spins and cancels animation frames on teardown", () => {
     creator = mountFihCreator(vi.fn());
     vi.spyOn(Math, "random").mockReturnValue(0);
-    const spin = find<HTMLButtonElement>(".fih-spin");
-    spin.click();
+    pullLever();
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
     vi.advanceTimersByTime(240);
     const lane = find('[data-part="head"]');
@@ -369,7 +399,7 @@ describe("three-lane creator", () => {
     vi.advanceTimersByTime(2400);
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(0);
     expect(find<HTMLInputElement>("#fih-head-size").value).toBe("0.6");
-    spin.click();
+    pullLever();
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
     creator.destroy();
     expect(vi.getTimerCount()).toBe(0);
@@ -378,7 +408,7 @@ describe("three-lane creator", () => {
     const display = vi.fn();
     creator = mountFihCreator(display);
     expect(document.querySelector("select, .fih-effects, .fih-undo")).toBeNull();
-    for (let i = 0; i < 5; i++) find<HTMLButtonElement>(".fih-spin").click();
+    for (let i = 0; i < 5; i++) pullLever();
     vi.advanceTimersByTime(10_000);
     reel("head").focus();
     submit();
@@ -566,11 +596,11 @@ describe("three-lane creator", () => {
     expect(shape("body")).toBe("round");
     expect(slot.hasAttribute("data-hovered")).toBe(true);
   });
-  it("prioritizes spin and update clicks through the window plane without duplicate actions", () => {
+  it("does not turn a window-plane click into a lever pull, and prioritizes update clicks", () => {
     const display = vi.fn();
     creator = mountFihCreator(display);
     const plane = find(".glass-window__surface");
-    const spin = find<HTMLButtonElement>(".fih-spin");
+    const spin = find<HTMLButtonElement>(".fih-lever");
     const release = find<HTMLButtonElement>(".fih-release");
     const bounds = (top: number) => ({
       left: 500,
@@ -620,6 +650,11 @@ describe("three-lane creator", () => {
       );
     };
     hit(117);
+    expect(document.querySelectorAll("[data-spinning]")).toHaveLength(0);
+    const gesture = { clientX: 550, pointerId: 1, isPrimary: true, button: 0, bubbles: true, cancelable: true };
+    plane.dispatchEvent(new PointerEvent("pointerdown", { ...gesture, clientY: 117 }));
+    window.dispatchEvent(new PointerEvent("pointermove", { ...gesture, clientY: 117 + FIH_LEVER_MOTION.pullDistance }));
+    window.dispatchEvent(new PointerEvent("pointerup", { ...gesture, clientY: 117 + FIH_LEVER_MOTION.pullDistance }));
     expect(document.querySelectorAll("[data-spinning]")).toHaveLength(3);
     vi.advanceTimersByTime(10_000);
     reel("body").focus();

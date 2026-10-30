@@ -28,7 +28,7 @@ and WebP posters. Original uploads are preserved locally in the ignored
 `media-originals/` folder and excluded from the deployed site. The
 desktop cone reopens a minimized or closed player. The title bar supports dragging,
 double-click to maximize, and the original window tilt. The toolbar's buttons
-float at the same 30px depth as the fish creator's Spin and Update buttons.
+float at the same 30px depth as the fish creator's Update button.
 Volume, the seek slider, and the menus sit on the window surface. Playback
 controls are ordered Previous, Play/Pause, Next.
 Help → Donate to VLC opens https://www.videolan.org/contribute.html in a new tab.
@@ -70,8 +70,11 @@ With the page visible, visitors earn fih according to
 Opening the creator lets them release the whole-number portion of their allowance.
 
 The creator places a **4:3 preview on the left** and three narrow **fin**, **body**,
-and **head** slots in one recessed control panel on the right. The full-width
-**spin all** button sits below the reels, with wide color swatches in each lane.
+and **head** slots in one recessed control panel on the right. A native Three.js
+lever extends outside the window’s right edge and follows its tilt. Its smooth,
+metallic cylindrical mount holds an arm that bends outward toward the knob.
+Pulling the red knob down far enough spins all three reels; keyboard
+activation also works. Wide color swatches sit in each lane.
 The time-spent line, save status, and release button share a compact footer row.
 Save messages appear immediately left of the button; release/update also retries
 failed sharing, without a separate retry button. Scroll over a
@@ -84,12 +87,12 @@ buttons and Up/Down/Home/End keys offer the same selection. Each part has a cust
 color picker and a 60–150% size slider. Part headings, shape names, color/size
 labels, percentage readouts, preview captions, and the fish description are
 omitted visually; accessible control names remain. There are no shape/color dropdowns, special
-effects panel, or undo action. **Spin all** randomizes shapes, sizes across the
+effects panel, or undo action. Pulling the lever randomizes shapes, sizes across the
 full slider range, and colors from the supplied 20-color MS Paint palette. Reels scroll continuously
 while the slots rise from the window in 3D at a fixed layout height; colors cycle through the palette
 and sliders sweep from minimum to maximum, wrapping back to minimum. Columns
 slow down and land in fin/body/head order, half a second apart. Manual editing or
-release settles the spin first; clicking spin again restarts it. Release applies
+release settles the spin first; pulling the lever again restarts it. Release applies
 the design to the full earned swarm immediately and plays a swim-out animation
 with a ripple at the preview opening. The preview returns ready for editing; edits
 or another spin cancel the effect. Unreleased edits are not saved.
@@ -153,7 +156,24 @@ window-motion regressions.
 Press **Space** outside form controls to toggle camera debug mode without scrolling.
 Add `?debug` to keep the simulation controls visible.
 The debug menu includes live water colors, surface light, god rays, bubbles,
-flocking, and camera controls. Density, size, rise speed, and opacity multipliers
+flocking, camera controls, and a **Fih lever** folder with live controls for:
+
+- **Size and shape:** overall scale, cylinder radius/length, arm thickness, lengths
+  before/after the bend, bend angle, sphere radius, and sphere axis rotation.
+- **Polygons:** cylinder/arm sides and sphere longitude/latitude segments.
+- **Placement:** horizontal/vertical offset, depth, cylinder angle, rest/pull angles.
+- **Shading:** smooth/flat shading, metallic strength, reflections, light intensity,
+  and separate colors, metalness, and roughness for the arm, cylinder, and sphere.
+- **Motion:** drag distance, trigger threshold, and return time. The configured
+  duration controls the return animation; set it to 0 for an instant return.
+
+**Copy settings** exports the current values as constants declarations to paste
+into `src/constants.ts`. Defaults live in `FIH_LEVER_GEOMETRY`,
+`FIH_LEVER_PLACEMENT`, `FIH_LEVER_SHADING`, `FIH_LEVER_MOTION`,
+`FIH_LEVER_METALLIC_SHADING`, and `FIH_LEVER_REFLECTION`. The canvas and drag area
+resize with the model so enlarged parts stay visible and accessible.
+
+Density, size, rise speed, and opacity multipliers
 start at 1× the values in `src/constants.ts`. Reset experiments restores those
 defaults; experiments last until reload and do not change the constants file.
 

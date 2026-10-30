@@ -98,7 +98,13 @@ input:disabled {
 
 .fih-window.win7 {
   --window-width: clamp(500px, calc((100dvh - 190px) * 2.2), 820px);
+  right: var(--fih-lever-overhang, 78px);
+  max-width: calc(100% - var(--fih-lever-overhang, 78px) - 24px);
   --fih-reel-height: clamp(88px, calc(100dvh - 480px), 144px);
+}
+.fih-window.win7[data-maximized] {
+  right: calc(var(--fih-lever-overhang, 78px) + 8px);
+  max-width: none;
 }
 .fih-window:focus {
   outline: none;
@@ -190,8 +196,9 @@ input:disabled {
 }
 .fih-machine {
   display: grid;
-  grid-template-rows: 1fr auto;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
   min-width: 0;
   padding: 10px;
   border: 1px solid #a3afb7;
@@ -207,30 +214,44 @@ input:disabled {
   min-height: 32px;
   padding: 5px 10px;
 }
-.fih-window.win7 .fih-spin {
-  width: 100%;
-  min-height: 34px;
-  --w7-el-grad: var(--w7-el-grad-h);
+/* An external mechanism in the same preserve-3d scene as the window. */
+.fih-window.win7 .fih-form .fih-lever {
+  --window-depth: 0px;
+  position: absolute;
+  /* Include the body's 24px frame inset so the upright clears the outer edge. */
+  right: -102px;
+  top: calc(50% - 158px);
+  display: block;
+  width: 78px;
+  height: 264px;
+  min-height: 264px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  transform-style: preserve-3d;
   animation: none;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
-.fih-window.win7 .fih-form .fih-spin::before {
-  background: var(--w7-el-grad-h);
-  opacity: 0;
-  animation: fih-spin-rainbow 2s linear infinite paused;
-  transition: opacity 0.4s ease-in-out;
+.fih-window.win7 .fih-form .fih-lever::before,
+.fih-window.win7 .fih-form .fih-lever::after {
+  content: none;
+}
+.fih-window.win7 .fih-form .fih-lever[data-pulling] {
+  cursor: grabbing;
+}
+.fih-lever-canvas {
+  position: absolute;
+  left: -70px;
+  top: -2px;
+  width: 192px;
+  height: 300px;
+  /* Tuck the inner end of the cylindrical mount beneath the frame. */
+  transform: translateZ(-14px);
   pointer-events: none;
-}
-.fih-window.win7 .fih-form .fih-spin:not(:disabled):is(:hover, :focus-visible)::before {
-  opacity: 1;
-  animation-play-state: running;
-}
-@keyframes fih-spin-rainbow {
-  from {
-    filter: hue-rotate(0deg);
-  }
-  to {
-    filter: hue-rotate(360deg);
-  }
 }
 .fih-window.win7 input[type="color"] {
   display: block;
@@ -276,7 +297,7 @@ input:disabled {
   transform-style: flat;
   translate: 0 0 var(--window-depth);
 }
-.fih-window.win7 .fih-form :is(.fih-spin, .fih-release) {
+.fih-window.win7 .fih-form .fih-release {
   --window-depth: 30px;
 }
 /* Read-only layers cannot intercept controls or the title bar beneath them. */

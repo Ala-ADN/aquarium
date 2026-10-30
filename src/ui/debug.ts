@@ -1,9 +1,10 @@
 import type { PerspectiveCamera, Scene } from "three";
-import type { GUI } from "three/addons/libs/lil-gui.module.min.js";
+import type { GUI, KeyToValueOfType } from "three/addons/libs/lil-gui.module.min.js";
 import type { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { BUBBLE_DENSITY, CAMERA_SETTINGS } from "../constants";
 import type { GPUSimulation } from "../simulation/GPUSimulation";
 import type { createWaterEnvironment } from "../water/WaterEnvironment";
+import { exportFihLeverSettings, type FihLeverSettings } from "./fih-lever-settings";
 
 export function addDebugControls(gui: GUI, options: {
   water: ReturnType<typeof createWaterEnvironment>;
@@ -13,6 +14,8 @@ export function addDebugControls(gui: GUI, options: {
   gpuSim: GPUSimulation;
   flocking: { separation: number; alignment: number; cohesion: number };
   onFlockingChange: () => void;
+  lever: FihLeverSettings;
+  onLeverChange: () => void;
 }) {
   const { water, camera, controls, scene, gpuSim, flocking, onFlockingChange } = options;
   const u = water.uniforms;
@@ -75,6 +78,73 @@ export function addDebugControls(gui: GUI, options: {
   fishFolder.add(flocking, "cohesion", 0, 100, 0.025).onChange(onFlockingChange);
   slider(fishFolder, gpuSim.velocityUniforms.speedLimit, "Speed limit", 0, 30, 0.1);
   fishFolder.close();
+
+  const leverFolder = gui.addFolder("Fih lever");
+  const { geometry: g, placement: placement, shading: shading, motion } = options.lever;
+  function leverChanged() {
+    options.onLeverChange();
+    copy.name("Copy settings");
+  }
+  function tune<T extends object>(folder: GUI, object: T, key: KeyToValueOfType<T, number>, label: string,
+    min: number, max: number, step = .01) {
+    folder.add(object, key, min, max, step).decimals(step >= 1 ? 0 : step >= .1 ? 1 : 2)
+      .name(label).onChange(leverChanged);
+  }
+  const geometryFolder = leverFolder.addFolder("Size and shape");
+  tune(geometryFolder, g, "scale", "Overall size", .3, 3);
+  tune(geometryFolder, g, "mountRadius", "Cylinder radius", 4, 40, .1);
+  tune(geometryFolder, g, "mountLength", "Cylinder length", 6, 80, .1);
+  tune(geometryFolder, g, "armRadius", "Arm thickness", 1, 12, .1);
+  tune(geometryFolder, g, "lowerArmLength", "Before bend length", 8, 120, .1);
+  tune(geometryFolder, g, "upperArmLength", "After bend length", 15, 240, .1);
+  tune(geometryFolder, g, "bendAngle", "Bend angle", -60, 75, .1);
+  tune(geometryFolder, g, "sphereRadius", "Sphere radius", 5, 60, .1);
+  tune(geometryFolder, g, "sphereAxisOffset", "Sphere axis offset", -180, 180, 1);
+  geometryFolder.close();
+  const polygonFolder = leverFolder.addFolder("Polygons");
+  tune(polygonFolder, g, "mountSegments", "Cylinder sides", 3, 64, 1);
+  tune(polygonFolder, g, "armSegments", "Arm sides", 3, 64, 1);
+  tune(polygonFolder, g, "sphereWidthSegments", "Sphere longitude", 3, 64, 1);
+  tune(polygonFolder, g, "sphereHeightSegments", "Sphere latitude", 2, 48, 1);
+  polygonFolder.close();
+  const placementFolder = leverFolder.addFolder("Placement");
+  tune(placementFolder, placement, "horizontalOffset", "Horizontal offset", -30, 150, 1);
+  tune(placementFolder, placement, "verticalOffset", "Vertical offset", -200, 200, 1);
+  tune(placementFolder, placement, "depth", "Depth", -60, 60, 1);
+  tune(placementFolder, placement, "mountAngle", "Cylinder angle", -60, 60, 1);
+  tune(placementFolder, placement, "restAngle", "Rest angle", -30, 60, 1);
+  tune(placementFolder, placement, "pullAngle", "Pull angle", 20, 140, 1);
+  placementFolder.close();
+  const shadingFolder = leverFolder.addFolder("Shading");
+  tune(shadingFolder, shading, "metallicShading", "Metallic shading", 0, 1);
+  tune(shadingFolder, shading, "reflection", "Reflection", 0, 3);
+  shadingFolder.add(shading, "smoothShading").name("Smooth shading").onChange(leverChanged);
+  tune(shadingFolder, shading, "ambientLight", "Ambient light", 0, 5);
+  tune(shadingFolder, shading, "keyLight", "Key light", 0, 8);
+  for (const [label, color, metalness, roughness] of [
+    ["Arm", "armColor", "armMetalness", "armRoughness"],
+    ["Cylinder", "mountColor", "mountMetalness", "mountRoughness"],
+    ["Sphere", "sphereColor", "sphereMetalness", "sphereRoughness"],
+  ] as const) {
+    const materialFolder = shadingFolder.addFolder(label);
+    materialFolder.addColor(shading, color).name("Color").onChange(leverChanged);
+    tune(materialFolder, shading, metalness, "Metalness", 0, 1);
+    tune(materialFolder, shading, roughness, "Roughness", .02, 1);
+    materialFolder.close();
+  }
+  shadingFolder.close();
+  const motionFolder = leverFolder.addFolder("Motion");
+  tune(motionFolder, motion, "pullDistance", "Drag distance", 20, 200, 1);
+  tune(motionFolder, motion, "triggerThreshold", "Trigger threshold", .1, 1);
+  tune(motionFolder, motion, "returnDuration", "Return time (ms)", 0, 1200, 10);
+  motionFolder.close();
+  const copy = leverFolder.add({ copy: async () => {
+    try {
+      await navigator.clipboard.writeText(exportFihLeverSettings(options.lever));
+      copy.name("Copied settings");
+    } catch { copy.name("Copy failed — try again"); }
+  } }, "copy").name("Copy settings");
+  leverFolder.close();
 
   const cameraFolder = gui.addFolder("Camera");
   cameraFolder.add(camera, "fov", 35, 110, 1).name("Field of view").onChange(() => camera.updateProjectionMatrix());

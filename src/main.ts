@@ -30,6 +30,7 @@ import { selectSharedSchool } from "./fih/shared";
 import type { FihSaveStatus, SharedFih } from "./fih/shared";
 import { createSharedFihSync } from "./fih/shared-sync";
 import { readVisit } from "./fih/visit";
+import { createFihLeverSettings } from "./ui/fih-lever-settings";
 import fihVertexShader from "./fih/shader/vertex.glsl?raw";
 import fihFragmentShader from "./fih/shader/fragment.glsl?raw";
 
@@ -183,6 +184,10 @@ let mediaPlayer: ReturnType<typeof import("./ui/media-player")["mountMediaPlayer
 let trashcan: ReturnType<typeof import("./ui/trashcan")["mountTrashcan"]> | null = null;
 let saveStatus: FihSaveStatus | null = null;
 let disposed = false;
+const leverAppearance = createFihLeverSettings();
+function updateLeverAppearance() {
+  creator?.setLeverSettings(leverAppearance);
+}
 
 const effectController = {
   separation: Number(FIH_FLOCKING.separation),
@@ -212,6 +217,7 @@ async function loadEditor() {
       onRelease: (design) => sharing?.submit(design),
     });
     restoringVisit = false;
+    updateLeverAppearance();
     if (saveStatus) creator.setSaveStatus(saveStatus);
   } catch {
     if (disposed) return;
@@ -311,6 +317,8 @@ function loadDebug() {
   if (!debugLoading) debugLoading = import("./ui/debug-panel").then(({ createDebugPanel }) => {
     if (disposed) return;
     debugPanel = createDebugPanel({ canvas, water, camera, scene, gpuSim,
+      lever: leverAppearance,
+      onLeverChange: updateLeverAppearance,
       flocking: effectController, onFlockingChange: valuesChanger, onPauseChange: setDebugMode });
     debugPanel.setVisible(effectController.paused || debug);
   }).catch(() => { debugLoading = null; });

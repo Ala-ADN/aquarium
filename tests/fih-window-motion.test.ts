@@ -114,7 +114,7 @@ describe("customization preserves the original window motion", () => {
     point(size, 120, 580);
     expect(value("ry")).toBe(-6);
     expect(size.value).toBe("1.5");
-    const spin = panel.querySelector<HTMLButtonElement>(".fih-spin")!;
+    const spin = panel.querySelector<HTMLButtonElement>(".fih-lever")!;
     spin.click();
     point(spin, 880, 100);
     expect(value("parallax-x")).toBe(-12);

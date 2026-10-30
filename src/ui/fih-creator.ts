@@ -14,6 +14,7 @@ import { drawFihPreview } from "./fih-preview";
 import { createFihFaviconUpdater } from "./fih-favicon";
 import { createWindow } from "./window";
 import { sampleFihSpin } from "./fih-spin";
+import { buildFihLever } from "./fih-lever";
 import { createFihReleaseFeedback } from "./fih-release";
 import { prioritizeControlClicks } from "./control-pointer-priority";
 import type { FihPreviewFactory } from "./fih-live-preview";
@@ -69,12 +70,14 @@ export function mountFihCreator(
   form.className = "fih-form";
   form.innerHTML = `
     <div class="fih-editor"><div class="fih-preview"><canvas role="img" aria-label="Preview of your fih"></canvas><span class="fih-release-ripple" aria-hidden="true"></span></div>
-    <div class="fih-machine" role="group" aria-label="Fish controls"><div class="fih-lanes">${FIH_PARTS.map(lane).join("")}</div><button type="button" class="fih-spin">spin all</button></div></div>
+    <div class="fih-machine" role="group" aria-label="Fish controls"><div class="fih-lanes">${FIH_PARTS.map(lane).join("")}</div></div></div>
+    <button type="button" class="fih-lever" data-drag-control aria-label="Pull lever down to spin all" title="Pull down to spin all"></button>
     <p class="fih-spin-status visually-hidden" role="status" aria-live="polite"></p>
     <div class="fih-release-row"><span class="fih-progress-text"><span class="fih-progress-message">you spent <span class="fih-seconds">0</span> <span class="fih-seconds-unit">seconds</span> here, thanks,</span> <span class="fih-progress-reward">you get <span id="fih-count">1</span> <canvas class="fih-progress-fih" width="32" height="18" role="img" aria-label="fih">fih</canvas></span></span><p class="fih-save-status" role="status" aria-live="polite" hidden></p><button class="fih-release" type="submit" disabled>release</button></div>`;
   const fihWindow = createWindow("make a fih", form);
   fihWindow.element.classList.add("fih-window");
   fihWindow.element.id = "fih-creator";
+  fihWindow.element.dataset.rightOverhang = "78";
   fihWindow.element.hidden = true;
   fihWindow.element.tabIndex = -1;
   const handle = fihWindow.element.querySelector<HTMLElement>(".glass-window__handle")!;
@@ -105,12 +108,15 @@ export function mountFihCreator(
       fihWindow.resetPosition();
       updatePreviewCutout();
       livePreview?.resize();
+      leverView.setVisible(true);
       enterCreator();
       handle.focus({ preventScroll: true });
     },
     options
   );
   function hide() {
+    resetLever();
+    leverView.setVisible(false);
     stopSpin();
     releaseFeedback.cancel();
     clearHover();
@@ -403,6 +409,70 @@ export function mountFihCreator(
     }
     frame(started);
   }
+  const lever = find<HTMLButtonElement>(".fih-lever");
+  const leverView = buildFihLever(lever);
+  let leverPointer: number | null = null;
+  let leverStartY = 0;
+  let leverTriggered = false;
+  function resetLever() {
+    const pointer = leverPointer;
+    leverPointer = null;
+    leverTriggered = false;
+    delete lever.dataset.pulling;
+    // Releasing capture also sends lostpointercapture; finish each gesture once.
+    if (pointer === null) return;
+    if (lever.hasPointerCapture?.(pointer)) lever.releasePointerCapture(pointer);
+    leverView.reset();
+  }
+  function pullLever(clientY: number) {
+    const { pullDistance: leverTravel, triggerThreshold: leverThreshold } = leverView.getMotion();
+    const distance = Math.max(0, Math.min(leverTravel, clientY - leverStartY));
+    leverView.setPull(distance / leverTravel);
+    if (!leverTriggered && distance >= leverTravel * leverThreshold) {
+      leverTriggered = true;
+      startSpin();
+    }
+  }
+  window.addEventListener("pointerdown", (event) => {
+    if (!event.isPrimary || event.button !== 0 || leverPointer !== null || fihWindow.element.hidden) return;
+    const target = event.target instanceof Element ? event.target : null;
+    const targetWindow = target?.closest(".glass-window");
+    if (targetWindow && targetWindow !== fihWindow.element) return;
+    const control = target?.closest("button, input, select, textarea, a");
+    if (control && control !== lever) return;
+    // During tilt the visible canvas can hit the window's plane instead of the button.
+    if (!target || !lever.contains(target)) {
+      const rect = lever.getBoundingClientRect();
+      if (!rect.width || !rect.height || event.clientX < rect.left || event.clientX > rect.right ||
+          event.clientY < rect.top || event.clientY > rect.bottom) return;
+    }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    lever.focus({ preventScroll: true });
+    leverPointer = event.pointerId;
+    leverStartY = event.clientY;
+    leverTriggered = false;
+    lever.dataset.pulling = "";
+    lever.setPointerCapture?.(event.pointerId);
+  }, { ...options, capture: true });
+  window.addEventListener("pointermove", (event) => {
+    if (event.pointerId === leverPointer) pullLever(event.clientY);
+  }, options);
+  window.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== leverPointer) return;
+    pullLever(event.clientY);
+    resetLever();
+  }, options);
+  window.addEventListener("pointercancel", (event) => {
+    if (event.pointerId === leverPointer) resetLever();
+  }, options);
+  window.addEventListener("blur", resetLever, options);
+  lever.addEventListener("lostpointercapture", resetLever, options);
+  lever.addEventListener("click", (event) => {
+    // Keyboard and assistive activation still work; a short pointer pull does not spin.
+    if (event.detail === 0) startSpin();
+    else event.preventDefault();
+  }, options);
   function changeColor(part: FihPart, value: string | null) {
     stopSpin();
     draft.change(
@@ -512,7 +582,6 @@ export function mountFihCreator(
   );
   window.addEventListener("blur", clearHover, options);
   document.documentElement.addEventListener("pointerleave", clearHover, options);
-  find(".fih-spin").addEventListener("click", startSpin, options);
   const observer = new IntersectionObserver(
     (entries) => {
       if (entries.some((entry) => entry.isIntersecting)) enterCreator();
@@ -577,6 +646,7 @@ export function mountFihCreator(
       tick();
       updateAllowance();
       if (document.hidden) {
+        resetLever();
         stopSpin();
         releaseFeedback.cancel();
       }
@@ -588,6 +658,7 @@ export function mountFihCreator(
     "pagehide",
     () => {
       tick();
+      resetLever();
       stopSpin();
       releaseFeedback.cancel();
       persist();
@@ -596,10 +667,13 @@ export function mountFihCreator(
   );
   return {
     setSaveStatus,
+    setLeverSettings: leverView.setSettings,
     destroy() {
       tick();
       persist();
       destroyed = true;
+      resetLever();
+      leverView.destroy();
       clearHover();
       stopSpin(false);
       releaseFeedback.cancel();
