@@ -13,6 +13,7 @@ import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { FihGeometry } from "./fih/geometry/fih";
 import { fihTemplate } from "./fih/appearance";
 import { getPatternTexture } from "./fih/pattern-texture";
+import { updateFihFade } from "./fih/fade";
 import { GPUSimulation } from "./simulation/GPUSimulation";
 import {
   BACKGROUND_GRADIENT,
@@ -77,8 +78,10 @@ const fihMaterial = new ShaderMaterial({
   vertexShader: fihVertexShader,
   fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
-  transparent: true,
-  depthWrite: false,
+  // GPU-positioned fish cannot be sorted individually inside these batches.
+  // Alpha hashing keeps the reveal fade while allowing per-pixel depth writes.
+  alphaHash: true,
+  depthWrite: true,
 });
 
 const fihMesh = new Mesh(geometry, fihMaterial);
@@ -95,8 +98,8 @@ const templateMaterial = () => new ShaderMaterial({
   vertexShader: fihVertexShader,
   fragmentShader: withWaterColor(fihFragmentShader),
   side: DoubleSide,
-  transparent: true,
-  depthWrite: false,
+  alphaHash: true,
+  depthWrite: true,
 });
 const visitorMaterial = templateMaterial();
 const sharedMaterial = templateMaterial();
@@ -119,6 +122,8 @@ let sharing: ReturnType<typeof createSharedFihSync> | null = null;
 let backgroundOffset = 0;
 let backgroundCount = INITIAL_FIH;
 let sharedRevealTimes = new Map<string, number[]>();
+let latestSharedReveal = 0;
+let latestVisitorReveal = 0;
 
 function refreshSchool() {
   const school = selectSharedSchool(sharedEntries, ownDesign, ownerId);
@@ -134,9 +139,11 @@ function refreshSchool() {
   schoolKey = key;
   const now = fadeTime();
   const nextRevealTimes = new Map<string, number[]>();
+  latestSharedReveal = 0;
   const pieces = school.placements.map(({ ownerId, design, offset }) => {
     const previous = sharedRevealTimes.get(ownerId) ?? [];
     const times = Array.from({ length: design.count }, (_, i) => previous[i] ?? now);
+    for (const time of times) latestSharedReveal = Math.max(latestSharedReveal, time);
     nextRevealTimes.set(ownerId, times);
     return new FihGeometry(fihTemplate(design), design.count, offset, times);
   });
@@ -154,13 +161,14 @@ function scheduleSchool() {
 
 function displayFih(design: FihDesign) {
   ownDesign = design;
+  latestVisitorReveal = fadeTime();
   visitorMaterial.uniforms.patternMask.value = getPatternTexture("plain");
   releasedAt = restoringVisit ? -Infinity : performance.now();
   const visitorGeometry = new FihGeometry(
     fihTemplate(design),
     design.count,
     0,
-    fadeTime()
+    latestVisitorReveal
   );
   if (visitorMesh) {
     visitorMesh.geometry.dispose();
@@ -344,6 +352,9 @@ renderer.setAnimationLoop(() => {
   const now = performance.now();
   firstFrameAt ??= now;
   fihUniforms.fadeTime.value = (now - firstFrameAt) / 1000;
+  updateFihFade(fihMaterial, fihUniforms.fadeTime.value, 0);
+  updateFihFade(sharedMaterial, fihUniforms.fadeTime.value, latestSharedReveal);
+  updateFihFade(visitorMaterial, fihUniforms.fadeTime.value, latestVisitorReveal);
   let delta = (now - lastTime) / 1000;
   if (delta > 1) delta = 1; // safety cap on large deltas
   lastTime = now;

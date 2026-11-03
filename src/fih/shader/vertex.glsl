@@ -16,6 +16,9 @@ varying float vBodyHeight;
 varying float vFin;
 uniform float time;
 varying float vColorVariation;
+#ifdef USE_ALPHAHASH
+varying vec3 vPosition;
+#endif
 
 void main() {
     vFade = fadeDuration > 0.0 ? smoothstep(0.0, fadeDuration, max(0.0, fadeTime - revealedAt)) : 1.0;
@@ -53,6 +56,10 @@ void main() {
 	);
 	newPosition =  maty * matz * newPosition;
 	newPosition += pos;
+#ifdef USE_ALPHAHASH
+    // Include GPU simulation motion so each fish has its own fade coverage.
+    vPosition = newPosition;
+#endif
 	vColor = vec4( fihColor, 1.0 );
 	vec4 viewPosition = viewMatrix * vec4(newPosition, 1.0);
 	vViewDepth = -viewPosition.z;

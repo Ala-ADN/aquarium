@@ -13,9 +13,21 @@ uniform float finShade;
 uniform vec2 fishFog;
 uniform float waterSurfaceStrength;
 uniform float waterSurfaceSpeed;
+#ifdef USE_ALPHAHASH
+varying vec3 vPosition;
+#endif
+#include <alphahash_pars_fragment>
 #include <water_color>
 
 void main() {
+#ifdef USE_ALPHAHASH
+    // Fully visible fish need no hash; hidden samples need no lighting or fog.
+    if (vFade <= 0.0) discard;
+    if (vFade < 1.0) {
+        if (vFade < getAlphaHashThreshold(vPosition)) discard;
+    }
+#endif
+
     // Linear colors; both the default school and visitor colors use sRGB output.
     vec3 schoolColor = mix(vec3(0.012, 0.26, 0.38), vec3(0.025, 0.48, 0.42), vColorVariation);
     schoolColor *= mix(1.0, finShade, vFin);
