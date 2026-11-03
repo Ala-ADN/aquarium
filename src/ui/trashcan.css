@@ -1,3 +1,11 @@
+@font-face {
+  font-family: "CV Mono";
+  src: url("../asset/fonts/DejaVuSansMono.woff") format("woff");
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+}
+
 .trashcan-desktop-icon {
   top: 218px;
   font-family: "Pixelated MS Sans Serif", Arial, sans-serif;
@@ -216,9 +224,20 @@
   background: #fff;
   color: #000;
   font:
-    13px/1.2 "Courier New",
+    13px/1.2 "CV Mono",
     monospace;
+  font-variant-ligatures: none;
+  font-kerning: none;
+  letter-spacing: 0;
+  word-spacing: 0;
+  tab-size: 8;
+  overflow: auto;
   scrollbar-width: auto;
+}
+/* Preserve the CV's fixed columns even when the window is narrower than the art. */
+.win98 .notepad-text[wrap="off"] {
+  white-space: pre;
+  overflow-wrap: normal;
 }
 .win98 .notepad-text::-webkit-scrollbar {
   display: block;

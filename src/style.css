@@ -122,6 +122,9 @@ input:disabled {
   align-self: flex-start;
   flex: none;
 }
+.fih-window .title-bar-controls button[aria-label="Maximize"]:disabled {
+  cursor: not-allowed;
+}
 .fih-window[data-maximized] .glass-window__body {
   flex: 1;
 }

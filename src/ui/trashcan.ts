@@ -114,10 +114,10 @@ export function mountTrashcan(host: HTMLElement, files: readonly CvFile[] = cvLi
           <button type="button" data-action="select">Select all<span>Ctrl+A</span></button>
         </div></details>
         <details><summary>Format</summary><div class="notepad-menu">
-          <button type="button" data-action="wrap" aria-pressed="true">Word wrap<span class="notepad-wrap-check">✓</span></button>
+          <button type="button" data-action="wrap" aria-pressed="false">Word wrap<span class="notepad-wrap-check"></span></button>
         </div></details>
       </nav>
-      <textarea class="notepad-text" spellcheck="false" wrap="soft"></textarea>
+      <textarea class="notepad-text" spellcheck="false" wrap="off"></textarea>
       <footer class="status-bar"><p class="status-bar-field">Text document</p><p class="status-bar-field notepad-position">Ln 1, Col 1</p></footer>
     `;
     const textarea = content.querySelector<HTMLTextAreaElement>("textarea")!;
@@ -138,8 +138,13 @@ export function mountTrashcan(host: HTMLElement, files: readonly CvFile[] = cvLi
       const measure = document.createElement("div");
       Object.assign(measure.style, {
         position: "fixed", visibility: "hidden", pointerEvents: "none",
-        width: "max-content", whiteSpace: "pre", font: style.font,
-        letterSpacing: style.letterSpacing, tabSize: style.tabSize,
+        // The computed font shorthand can be empty with ligatures disabled.
+        width: "max-content", whiteSpace: "pre",
+        fontFamily: style.fontFamily, fontSize: style.fontSize,
+        fontWeight: style.fontWeight, fontStyle: style.fontStyle,
+        fontStretch: style.fontStretch, lineHeight: style.lineHeight,
+        fontVariantLigatures: style.fontVariantLigatures, fontKerning: style.fontKerning,
+        letterSpacing: style.letterSpacing, wordSpacing: style.wordSpacing, tabSize: style.tabSize,
       });
       // Trailing padding spaces should not make an otherwise narrow CV wider.
       measure.textContent = textarea.value.split("\n").map(line => line.trimEnd()).join("\n");
@@ -188,7 +193,9 @@ export function mountTrashcan(host: HTMLElement, files: readonly CvFile[] = cvLi
     for (const name of ["input", "click", "keyup", "select"]) textarea.addEventListener(name, update, options);
     textarea.addEventListener("input", fitContent, options);
     window.addEventListener("resize", fitContent, options);
-    void document.fonts?.ready.then(fitContent);
+    // The editor is initially hidden, so fonts.ready may resolve before its font
+    // is requested. Load it explicitly and measure again using the final metrics.
+    void document.fonts?.load('13px "CV Mono"', textarea.value).then(fitContent).catch(() => {});
     content.addEventListener("click", event => {
       const target = event.target instanceof Element ? event.target : null;
       const button = target?.closest<HTMLButtonElement>("button[data-action]");

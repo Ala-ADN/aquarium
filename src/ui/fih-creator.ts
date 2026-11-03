@@ -127,29 +127,16 @@ export function mountFihCreator(
   }
   const windowControls = document.createElement("div");
   windowControls.className = "title-bar-controls";
-  function maximize() {
-    const maximized = fihWindow.element.toggleAttribute("data-maximized");
-    const button = windowControls.children[1] as HTMLButtonElement;
-    button.setAttribute("aria-label", maximized ? "Restore" : "Maximize");
-    button.title = maximized ? "Restore" : "Maximize";
-    if (!maximized) fihWindow.resetPosition();
-  }
   for (const name of ["Minimize", "Maximize", "Close"]) {
     const button = document.createElement("button");
     button.type = "button";
     button.setAttribute("aria-label", name);
     button.title = name;
-    button.addEventListener("click", name === "Maximize" ? maximize : hide, options);
+    if (name === "Maximize") button.disabled = true;
+    else button.addEventListener("click", hide, options);
     windowControls.append(button);
   }
   handle.append(windowControls);
-  handle.addEventListener(
-    "dblclick",
-    (event) => {
-      if (!(event.target instanceof Element && event.target.closest("button"))) maximize();
-    },
-    options
-  );
   fihWindow.element.addEventListener(
     "pointerdown",
     (event) => {

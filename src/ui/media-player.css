@@ -152,6 +152,14 @@
   border-top: 1px solid #d5d5d5;
   border-bottom: 1px solid white;
 }
+.vlc-menu-check {
+  display: inline-block;
+  width: 16px;
+  margin-left: -16px;
+}
+.vlc-menu-popup [aria-checked="false"] .vlc-menu-check {
+  visibility: hidden;
+}
 
 .vlc-stage {
   position: relative;
@@ -404,9 +412,10 @@
   white-space: nowrap;
 }
 .vlc-time {
-  padding: 1px 7px;
-  border-left: 1px solid #bdbdbd;
-  box-shadow: inset 1px 0 #fff;
+  flex: none;
+  min-width: 5ch;
+  font-size: 11px;
+  text-align: center;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

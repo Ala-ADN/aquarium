@@ -60,6 +60,9 @@ const menus: { label: string; entries: MenuEntry[] }[] = [
     { label: "Normal speed", action: "normalSpeed", shortcut: "=" },
     { label: "Slower", action: "slower", shortcut: "−" },
   ] },
+  { label: "View", entries: [
+    { label: "Playlist", action: "playlist", shortcut: "Ctrl+L" },
+  ] },
   { label: "Help", entries: [
     { label: "Donate to VLC", action: "donate" },
   ] },
@@ -90,7 +93,9 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     </div>
     <div class="vlc-controls">
       <div class="vlc-seek-row">
+        <span class="vlc-time vlc-elapsed" aria-label="Elapsed time">00:00</span>
         <input class="vlc-seek" type="range" min="0" max="1000" value="0" step="1" aria-label="Seek" disabled>
+        <span class="vlc-time vlc-duration" aria-label="Total time">00:00</span>
       </div>
       <div class="vlc-toolbar" role="group" aria-label="Playback controls">
         <span class="vlc-tool-group">
@@ -114,7 +119,6 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     </div>
     <footer class="vlc-statusbar">
       <span class="vlc-status" role="status">VLC media player</span>
-      <span class="vlc-time">00:00 / 00:00</span>
       <span class="vlc-size-grip" aria-hidden="true"></span>
     </footer>
   `;
@@ -126,7 +130,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   const seek = query<HTMLInputElement>(".vlc-seek");
   const volume = query<HTMLInputElement>(".vlc-volume-input");
   const status = query(".vlc-status");
-  const time = query(".vlc-time");
+  const elapsedTime = query(".vlc-elapsed");
+  const totalTime = query(".vlc-duration");
   const menuBar = query(".vlc-menubar");
   const tools = new Map<Action, HTMLButtonElement>();
   for (const button of content.querySelectorAll<HTMLButtonElement>("button[data-action]")) {
@@ -235,7 +240,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     seek.disabled = !loadedId || !hasDuration();
     seek.value = hasDuration() ? `${video.currentTime / video.duration * 1000}` : "0";
     seek.setAttribute("aria-valuetext", `${formatMediaTime(video.currentTime)} of ${formatMediaTime(duration)}`);
-    time.textContent = `${formatMediaTime(video.currentTime)} / ${formatMediaTime(duration)}`;
+    elapsedTime.textContent = formatMediaTime(video.currentTime);
+    totalTime.textContent = formatMediaTime(duration);
     headingText.textContent = item ? `${item.title} - VLC media player` : "VLC media player";
     idle.hidden = !!video.getAttribute("poster") || (!!loadedId && video.readyState >= 2 && video.videoWidth > 0);
   }
@@ -402,6 +408,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
         playlist.hidden = !playlist.hidden;
         tools.get("playlist")!.setAttribute("aria-pressed", `${!playlist.hidden}`);
         tools.get("playlist")!.setAttribute("aria-label", playlist.hidden ? "Show playlist" : "Hide playlist");
+        menuBar.querySelector('[role="menuitemcheckbox"]')!.setAttribute("aria-checked", `${!playlist.hidden}`);
         break;
       case "github": {
         const url = current()?.sourceUrl;
@@ -519,7 +526,18 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
       if (!entry) { const divider = document.createElement("hr"); divider.setAttribute("role", "separator"); popup.append(divider); return; }
       const button = document.createElement("button");
       button.type = "button"; button.setAttribute("role", "menuitem");
+      if (entry.action === "playlist") {
+        button.setAttribute("role", "menuitemcheckbox");
+        button.setAttribute("aria-checked", `${!playlist.hidden}`);
+      }
       const label = document.createElement("span"); label.textContent = entry.label;
+      if (entry.action === "playlist") {
+        const check = document.createElement("span");
+        check.className = "vlc-menu-check";
+        check.setAttribute("aria-hidden", "true");
+        check.textContent = "✓";
+        label.prepend(check);
+      }
       const shortcut = document.createElement("span"); shortcut.textContent = entry.shortcut ?? "";
       button.append(label, shortcut);
       button.addEventListener("click", () => { closeMenus(); act(entry.action); }, opts);

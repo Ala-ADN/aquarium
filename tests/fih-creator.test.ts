@@ -109,9 +109,11 @@ describe("three-lane creator", () => {
     expect(window.hidden).toBe(true);
     launcher.click();
     expect(find<HTMLInputElement>("#fih-head-picker").value).toBe("#123456");
-    window.querySelector<HTMLButtonElement>('[aria-label="Maximize"]')!.click();
-    expect(window.hasAttribute("data-maximized")).toBe(true);
-    window.querySelector<HTMLButtonElement>('[aria-label="Restore"]')!.click();
+    const maximize = window.querySelector<HTMLButtonElement>('[aria-label="Maximize"]')!;
+    expect(maximize.disabled).toBe(true);
+    maximize.click();
+    expect(window.hasAttribute("data-maximized")).toBe(false);
+    window.querySelector('.glass-window__handle')!.dispatchEvent(new MouseEvent("dblclick", { bubbles: true }));
     expect(window.hasAttribute("data-maximized")).toBe(false);
     window.querySelector<HTMLButtonElement>('[aria-label="Close"]')!.click();
     expect(window.hidden).toBe(true);

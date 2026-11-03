@@ -44,6 +44,26 @@ function button(action: string) {
 }
 
 describe("desktop media player", () => {
+  it("toggles the playlist from View and keeps the menu checked state in sync with the toolbar", () => {
+    player = mountMediaPlayer(host, items);
+    const view = [...host.querySelectorAll<HTMLButtonElement>(".vlc-menu-trigger")]
+      .find(trigger => trigger.textContent === "View")!;
+    const popup = view.parentElement!.querySelector<HTMLElement>('[role="menu"]')!;
+    const playlistItem = popup.querySelector<HTMLButtonElement>('[role="menuitemcheckbox"]')!;
+    const playlist = host.querySelector<HTMLElement>(".vlc-playlist")!;
+    expect(playlistItem.getAttribute("aria-checked")).toBe("true");
+    view.click();
+    expect(popup.hidden).toBe(false);
+    playlistItem.click();
+    expect(popup.hidden).toBe(true);
+    expect(playlist.hidden).toBe(true);
+    expect(playlistItem.getAttribute("aria-checked")).toBe("false");
+    expect(button("playlist").getAttribute("aria-pressed")).toBe("false");
+    button("playlist").click();
+    expect(playlist.hidden).toBe(false);
+    expect(playlistItem.getAttribute("aria-checked")).toBe("true");
+  });
+
   it("shows descriptions, offline durations, and independent repository links without fetching videos", () => {
     player = mountMediaPlayer(host, [
       { ...items[0], description: "Explore a knowledge graph.", duration: 79.168, sourceUrl: "https://github.com/example/first" },
@@ -53,7 +73,8 @@ describe("desktop media player", () => {
     expect(descriptions).toEqual(["Explore a knowledge graph.", "Compare source perspectives."]);
     const durations = () => [...host.querySelectorAll(".vlc-playlist-duration")].map(el => el.textContent);
     expect(durations()).toEqual(["01:19", "01:30"]);
-    expect(host.querySelector(".vlc-time")!.textContent).toBe("00:00 / 01:19");
+    expect(host.querySelector(".vlc-elapsed")!.textContent).toBe("00:00");
+    expect(host.querySelector(".vlc-duration")!.textContent).toBe("01:19");
     const sources = [...host.querySelectorAll<HTMLAnchorElement>(".vlc-playlist-source")];
     expect(sources.map(el => el.href)).toEqual(["https://github.com/example/first", "https://github.com/example/second"]);
     expect(sources.every(el => el.target === "_blank" && el.rel === "noopener noreferrer")).toBe(true);
@@ -143,7 +164,8 @@ describe("desktop media player", () => {
     seek.value = "500";
     seek.dispatchEvent(new Event("input"));
     expect(video.currentTime).toBe(60);
-    expect(host.querySelector(".vlc-time")!.textContent).toBe("01:00 / 02:00");
+    expect(host.querySelector(".vlc-elapsed")!.textContent).toBe("01:00");
+    expect(host.querySelector(".vlc-duration")!.textContent).toBe("02:00");
     player.element.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
     expect(video.currentTime).toBe(65);
     seek.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));

@@ -89,10 +89,13 @@ describe("Trashcan and Notepad", () => {
     openDirectory();
     const editor = openFile();
     const text = editor.querySelector<HTMLTextAreaElement>("textarea")!;
-    editor.querySelector<HTMLButtonElement>('[data-action="wrap"]')!.click();
-    expect(text.wrap).toBe("off");
+    expect(text.getAttribute("wrap")).toBe("off");
+    expect(editor.querySelector('[data-action="wrap"]')!.getAttribute("aria-pressed")).toBe("false");
     editor.querySelector<HTMLButtonElement>('[data-action="wrap"]')!.click();
     expect(text.wrap).toBe("soft");
+    expect(editor.querySelector('[data-action="wrap"]')!.getAttribute("aria-pressed")).toBe("true");
+    editor.querySelector<HTMLButtonElement>('[data-action="wrap"]')!.click();
+    expect(text.wrap).toBe("off");
     editor.querySelector<HTMLButtonElement>('[data-action="select"]')!.click();
     expect(text.selectionStart).toBe(0);
     expect(text.selectionEnd).toBe(text.value.length);
