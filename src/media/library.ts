@@ -25,7 +25,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     poster: "media/credleaf/poster.webp",
     sourceUrl: "https://github.com/Ala-ADN/Credleaf_",
     description:
-      "A fact-checking and OSINT tool for exploring health misinformation through network graphs, timelines, and trust scores.",
+      "fact-checking and OSINT tool for exploring health misinformation through network graphs, timelines, and trust scores",
     duration: 92.672,
   },
   {
@@ -35,7 +35,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     poster: "media/voy/poster.webp",
     sourceUrl: "https://github.com/Ala-ADN/voy-demo",
     description:
-      "A graph-powered AI security analyst connecting MITRE ATLAS, OWASP LLM risks, and ISO 42001 controls to uncover compliance gaps.",
+      "graph-powered AI security analyst connecting MITRE ATLAS, OWASP LLM risks, and ISO 42001 controls to uncover compliance gaps",
     duration: 79.168,
   },
   {
@@ -45,7 +45,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     poster: "media/relib/poster.webp",
     sourceUrl: "https://github.com/saidiadem/relib",
     description:
-      "An interactive knowledge graph exploring colonial history through Wikipedia articles, source attribution, and contrasting narratives.",
+      "interactive knowledge graph exploring colonial history through Wikipedia articles, source attribution, and contrasting narratives",
     duration: 90.024,
   },
   {
@@ -55,7 +55,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     poster: "media/gommage/poster.webp",
     sourceUrl: "https://github.com/Ala-ADN/gommage",
     description:
-      "A Jira-native debugger for AI agents: record execution traces, inspect tool calls, and replay edited runs without repeating live side effects.",
+      "Jira-native debugger for AI agents: record execution traces, inspect tool calls, and replay edited runs without repeating live side effects",
     duration: 146.048,
   },
   {
@@ -65,7 +65,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     poster: "media/klippy/poster.webp",
     sourceUrl: "https://github.com/Rayen-Hamza/Klippy",
     description:
-      "A local-first desktop assistant that searches documents, images, and audio using retrieval and knowledge graph reasoning with small language models.",
+      "local-first desktop assistant that searches documents, images, and audio using retrieval and knowledge graph reasoning with small language models",
     duration: 49.408,
   },
 ];
