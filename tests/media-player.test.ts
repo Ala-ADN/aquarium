@@ -116,7 +116,7 @@ describe("desktop media player", () => {
     expect(video.src).toContain("media/first/demo.mp4");
     expect(video.paused).toBe(false);
     expect(button("play").getAttribute("aria-label")).toBe("Pause");
-    button("next").click();
+    host.querySelectorAll<HTMLButtonElement>(".vlc-playlist-item")[1].click();
     expect(video.getAttribute("src")).toBeNull();
     expect(video.paused).toBe(true);
     expect(HTMLMediaElement.prototype.play).toHaveBeenCalledOnce();
@@ -124,6 +124,36 @@ describe("desktop media player", () => {
     expect(host.querySelector(".vlc-status")!.textContent).toBe("Second demo");
     button("play").click();
     expect(video.src).toContain("media/second/demo.mp4");
+  });
+
+  it.each([true, false])("autoplays Next and Previous when paused is %s", (paused) => {
+    player = mountMediaPlayer(host, items);
+    const video = host.querySelector("video")!;
+    if (!paused) button("play").click();
+
+    button("next").click();
+    expect(video.src).toContain("media/second/demo.mp4");
+    expect(video.paused).toBe(false);
+    expect(button("play").getAttribute("aria-label")).toBe("Pause");
+
+    if (paused) button("play").click();
+    button("previous").click();
+    expect(video.src).toContain("media/first/demo.mp4");
+    expect(video.paused).toBe(false);
+    expect(button("play").getAttribute("aria-label")).toBe("Pause");
+  });
+
+  it("autoplays when Previous restarts the current video", () => {
+    player = mountMediaPlayer(host, items);
+    button("next").click();
+    const video = host.querySelector("video")!;
+    video.currentTime = 10;
+    button("play").click();
+
+    button("previous").click();
+    expect(video.src).toContain("media/second/demo.mp4");
+    expect(video.currentTime).toBe(0);
+    expect(video.paused).toBe(false);
   });
 
   it("leaves an empty project playlist idle without requesting a video", () => {

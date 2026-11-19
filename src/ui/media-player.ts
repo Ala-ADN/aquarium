@@ -330,14 +330,17 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     }
   }
 
-  function advance(direction: number) {
+  function advance(direction: number, autoplay: boolean) {
     if (!queue.length) return;
     if (direction < 0 && loadedId && (video.currentTime > 3 || selected === 0)) {
-      video.pause(); video.currentTime = 0; update(); return;
+      video.pause(); video.currentTime = 0; update();
+      if (autoplay) void start();
+      return;
     }
     const next = selected + direction;
     if (next >= queue.length || next < 0) return;
     select(next);
+    if (autoplay) void start();
   }
 
   function hide(close: boolean) {
@@ -402,8 +405,8 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   function act(action: Action) {
     switch (action) {
       case "play": if (video.paused) void start(); else video.pause(); break;
-      case "previous": advance(-1); break;
-      case "next": advance(1); break;
+      case "previous": advance(-1, true); break;
+      case "next": advance(1, true); break;
       case "playlist":
         playlist.hidden = !playlist.hidden;
         tools.get("playlist")!.setAttribute("aria-pressed", `${!playlist.hidden}`);
@@ -491,7 +494,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   video.addEventListener("loadedmetadata", () => { renderPlaylist(); update(); }, opts);
   video.addEventListener("ended", () => {
     video.pause();
-    advance(1);
+    advance(1, false);
     update();
   }, opts);
   video.addEventListener("error", () => {
