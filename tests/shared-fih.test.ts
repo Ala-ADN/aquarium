@@ -43,8 +43,8 @@ describe("bounded shared school", () => {
     expect(school.backgroundCount).toBe(0);
     expect(school.totalCount).toBe(MAX_FIH);
     expect(school.placements).toHaveLength(99);
-    expect(school.placements[0].offset).toBe(10);
-    expect(school.placements.at(-1)!.offset).toBe(990);
+    expect(school.placements[0].slots[0]).toBe(10);
+    expect(school.placements.at(-1)!.slots[0]).toBe(990);
     expect(school.placements.reduce((sum, item) => sum + item.design.count, 0)).toBe(990);
   });
   it("fills a partial last swarm and can display one's cloud design without a local save", () => {

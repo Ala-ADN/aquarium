@@ -1,5 +1,5 @@
 // filepath: c:\code\aquarium\src\simulation\GPUSimulation.ts
-import { WebGLRenderer, Vector3, RepeatWrapping, Texture } from "three";
+import { WebGLRenderer, Vector3, RepeatWrapping, Texture, DataTexture, RedFormat } from "three";
 import { GPUComputationRenderer } from "three/examples/jsm/misc/GPUComputationRenderer.js";
 import { BOUNDS, BOUNDS_HALF, FIH_FLOCKING, INITIAL_FIH, WIDTH } from "../constants";
 import fragmentShaderPosition from "../fih/shader/position.glsl?raw";
@@ -15,6 +15,8 @@ export class GPUSimulation {
   private initialVelocity: Texture;
   private initialized = false;
   private initializationError: string | null = null;
+  private activeSlotMask = new Uint8Array(WIDTH * WIDTH);
+  private activeSlots = new DataTexture(this.activeSlotMask, WIDTH, WIDTH, RedFormat);
 
   constructor(renderer: WebGLRenderer) {
     this.gpuCompute = new GPUComputationRenderer(WIDTH, WIDTH, renderer);
@@ -67,6 +69,9 @@ export class GPUSimulation {
     this.positionUniforms["delta"] = { value: 0.0 };
     this.velocityUniforms["time"] = { value: 1.0 };
     this.velocityUniforms["activeCount"] = { value: INITIAL_FIH };
+    this.velocityUniforms["activeSlots"] = { value: this.activeSlots };
+    this.positionUniforms["activeSlots"] = { value: this.activeSlots };
+    this.setActiveSlots(Array.from({ length: INITIAL_FIH }, (_, slot) => slot));
     this.velocityUniforms["delta"] = { value: 0.0 };
     this.velocityUniforms["testing"] = { value: 1.0 };
     this.velocityUniforms["separationDistance"] = { value: FIH_FLOCKING.separation };
@@ -76,6 +81,19 @@ export class GPUSimulation {
     this.velocityUniforms["freedomFactor"] = { value: 1.0 };
     this.velocityUniforms["predator"] = { value: new Vector3() };
     this.velocityVariable.material.defines.BOUNDS = BOUNDS.toFixed(2);
+  }
+
+  setActiveSlots(slots: readonly number[]) {
+    const mask = this.activeSlotMask;
+    mask.fill(0);
+    let upperBound = 0;
+    for (const slot of slots) {
+      mask[slot] = 255;
+      upperBound = Math.max(upperBound, slot + 1);
+    }
+    this.activeSlots.needsUpdate = true;
+    // Bound the neighbor loop while the mask excludes holes within that range.
+    this.velocityUniforms.activeCount.value = upperBound;
   }
 
   private fillPositionTexture(texture: Texture) {

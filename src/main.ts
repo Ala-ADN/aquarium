@@ -119,56 +119,42 @@ let sharedEntries: SharedFih[] = [];
 let schoolKey = "";
 let schoolFrame = 0;
 let sharing: ReturnType<typeof createSharedFihSync> | null = null;
-let backgroundOffset = 0;
-let backgroundCount = INITIAL_FIH;
-let sharedRevealTimes = new Map<string, number[]>();
+let school = selectSharedSchool([], null, null);
+let latestBackgroundReveal = 0;
 let latestSharedReveal = 0;
 let latestVisitorReveal = 0;
 
 function refreshSchool() {
-  const school = selectSharedSchool(sharedEntries, ownDesign, ownerId);
-  if (backgroundOffset !== school.count || backgroundCount !== school.backgroundCount) {
-    fihMesh.geometry.dispose();
-    fihMesh.geometry = new FihGeometry({}, school.backgroundCount, school.count);
-    backgroundOffset = school.count;
-    backgroundCount = school.backgroundCount;
-  }
-  gpuSim.velocityUniforms.activeCount.value = school.totalCount;
-  const key = JSON.stringify(school.placements);
+  const now = fadeTime();
+  school = selectSharedSchool(sharedEntries, ownDesign, ownerId, school, now);
+  const key = JSON.stringify([school.placements, school.backgroundSlots, school.ownSlots, ownDesign]);
   if (key === schoolKey) return;
   schoolKey = key;
-  const now = fadeTime();
-  const nextRevealTimes = new Map<string, number[]>();
+  gpuSim.setActiveSlots(school.activeSlots);
+  const timesFor = (slots: readonly number[]) => slots.map((slot) => school.revealTimes.get(slot)!);
+  const backgroundTimes = timesFor(school.backgroundSlots);
+  latestBackgroundReveal = Math.max(0, ...backgroundTimes);
+  fihMesh.geometry.dispose();
+  fihMesh.geometry = new FihGeometry({}, school.backgroundCount, school.backgroundSlots, backgroundTimes);
   latestSharedReveal = 0;
-  const pieces = school.placements.map(({ ownerId, design, offset }) => {
-    const previous = sharedRevealTimes.get(ownerId) ?? [];
-    const times = Array.from({ length: design.count }, (_, i) => previous[i] ?? now);
+  const pieces = school.placements.map(({ design, slots }) => {
+    const times = timesFor(slots);
     for (const time of times) latestSharedReveal = Math.max(latestSharedReveal, time);
-    nextRevealTimes.set(ownerId, times);
-    return new FihGeometry(fihTemplate(design), design.count, offset, times);
+    return new FihGeometry(fihTemplate(design), design.count, slots, times);
   });
-  sharedRevealTimes = nextRevealTimes;
   const merged = pieces.length ? mergeGeometries(pieces) : null;
   pieces.forEach((piece) => piece.dispose());
   sharedMesh.geometry.dispose();
   sharedMesh.geometry = merged ?? new BufferGeometry();
   sharedMesh.visible = merged !== null;
-}
-function scheduleSchool() {
-  if (schoolFrame) return;
-  schoolFrame = requestAnimationFrame(() => { schoolFrame = 0; refreshSchool(); });
-}
-
-function displayFih(design: FihDesign) {
-  ownDesign = design;
-  latestVisitorReveal = fadeTime();
-  visitorMaterial.uniforms.patternMask.value = getPatternTexture("plain");
-  releasedAt = restoringVisit ? -Infinity : performance.now();
+  if (!ownDesign) return;
+  const visitorTimes = timesFor(school.ownSlots);
+  latestVisitorReveal = Math.max(0, ...visitorTimes);
   const visitorGeometry = new FihGeometry(
-    fihTemplate(design),
-    design.count,
-    0,
-    latestVisitorReveal
+    fihTemplate(ownDesign),
+    ownDesign.count,
+    school.ownSlots,
+    visitorTimes
   );
   if (visitorMesh) {
     visitorMesh.geometry.dispose();
@@ -181,6 +167,15 @@ function displayFih(design: FihDesign) {
     visitorMesh.frustumCulled = false;
     scene.add(visitorMesh);
   }
+}
+function scheduleSchool() {
+  if (schoolFrame) return;
+  schoolFrame = requestAnimationFrame(() => { schoolFrame = 0; refreshSchool(); });
+}
+
+function displayFih(design: FihDesign) {
+  ownDesign = design;
+  releasedAt = restoringVisit ? -Infinity : performance.now();
   refreshSchool();
 }
 
@@ -352,7 +347,7 @@ renderer.setAnimationLoop(() => {
   const now = performance.now();
   firstFrameAt ??= now;
   fihUniforms.fadeTime.value = (now - firstFrameAt) / 1000;
-  updateFihFade(fihMaterial, fihUniforms.fadeTime.value, 0);
+  updateFihFade(fihMaterial, fihUniforms.fadeTime.value, latestBackgroundReveal);
   updateFihFade(sharedMaterial, fihUniforms.fadeTime.value, latestSharedReveal);
   updateFihFade(visitorMaterial, fihUniforms.fadeTime.value, latestVisitorReveal);
   let delta = (now - lastTime) / 1000;

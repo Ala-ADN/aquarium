@@ -37,6 +37,24 @@ describe("simulation startup", () => {
     expect(compute).toHaveBeenCalledTimes(2);
   });
 
+  it("marks sparse simulation slots active and clears removed slots in both compute passes", () => {
+    const simulation = new GPUSimulation({} as WebGLRenderer);
+    const mask = simulation.velocityUniforms.activeSlots.value as DataTexture;
+    expect(simulation.positionUniforms.activeSlots.value).toBe(mask);
+    expect(Array.from(mask.image.data).filter((value) => value === 255)).toHaveLength(INITIAL_FIH);
+    simulation.setActiveSlots([1, 35, 999]);
+    expect(simulation.velocityUniforms.activeCount.value).toBe(1000);
+    expect(Array.from(mask.image.data).flatMap((value, slot) => value === 255 ? [slot] : [])).toEqual([1, 35, 999]);
+    simulation.setActiveSlots([35]);
+    expect(simulation.velocityUniforms.activeCount.value).toBe(36);
+    expect(mask.image.data[1]).toBe(0);
+    expect(mask.image.data[35]).toBe(255);
+    expect(mask.image.data[999]).toBe(0);
+    simulation.setActiveSlots([]);
+    expect(simulation.velocityUniforms.activeCount.value).toBe(0);
+    expect(Array.from(mask.image.data).every((value) => value === 0)).toBe(true);
+  });
+
   it("retains the first frame on unsupported hardware without retrying initialization every frame", () => {
     const simulation = new GPUSimulation({} as WebGLRenderer);
     const position = simulation.getCurrentPositionTexture();

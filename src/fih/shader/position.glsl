@@ -1,8 +1,13 @@
 uniform float time;
 uniform float delta;
+uniform sampler2D activeSlots;
 void main()	{
 	vec2 uv = gl_FragCoord.xy / resolution.xy;
 	vec4 tmpPos = texture2D( texturePosition, uv );
+	if (texture2D(activeSlots, uv).r < 0.5) {
+		gl_FragColor = tmpPos;
+		return;
+	}
 	vec3 position = tmpPos.xyz;
 	vec3 velocity = texture2D( textureVelocity, uv ).xyz;
 	float phase = tmpPos.w;

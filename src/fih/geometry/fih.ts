@@ -24,7 +24,7 @@ function legacyTriangles(template: Partial<FihTemplate>): FihTriangle[] {
 }
 
 export class FihGeometry extends BufferGeometry {
-  constructor(template: Partial<FihTemplate> = {}, count = MAX_FIH, offset = 0, revealedAt: number | readonly number[] = 0) {
+  constructor(template: Partial<FihTemplate> = {}, count = MAX_FIH, slots: number | readonly number[] = 0, revealedAt: number | readonly number[] = 0) {
     super();
     const triangles = template.finShape || template.headShape ? createFihParts(template) : legacyTriangles(template);
     const pointsPerFih = triangles.length * 3;
@@ -53,7 +53,7 @@ export class FihGeometry extends BufferGeometry {
           vertices.setXYZ(i, 0, y, z);
           colors.setXYZ(i, color.r, color.g, color.b);
           revealTimes.setX(i, typeof revealedAt === "number" ? revealedAt : revealedAt[fish] ?? 0);
-          const slot = fish + offset;
+          const slot = typeof slots === "number" ? fish + slots : slots[fish];
           references.setXY(i, ((slot % WIDTH) + .5) / WIDTH, (Math.floor(slot / WIDTH) + .5) / WIDTH);
           localVertex.setX(i, local++);
           part.setX(i, triangle.part === "fin" ? 0 : triangle.part === "body" ? 1 : 2);

@@ -1,5 +1,6 @@
 uniform float time;
 uniform float activeCount;
+uniform sampler2D activeSlots;
 uniform float testing;
 uniform float delta; // about 0.016
 uniform float separationDistance; // 20
@@ -37,7 +38,7 @@ void main() {
 
 	vec2 uv = gl_FragCoord.xy / resolution.xy;
 	// Inactive slots remain ready for later releases, but never affect the school.
-	if (floor(gl_FragCoord.y) * width + floor(gl_FragCoord.x) >= activeCount) {
+	if (texture2D(activeSlots, uv).r < 0.5) {
 		gl_FragColor = texture2D(textureVelocity, uv);
 		return;
 	}
@@ -79,6 +80,7 @@ void main() {
 		for ( float x = 0.0; x < width; x++ ) {
 			if (y * width + x >= activeCount) break;
 			vec2 ref = vec2( x + 0.5, y + 0.5 ) / resolution.xy;
+			if (texture2D(activeSlots, ref).r < 0.5) continue;
 			fihPosition = texture2D( texturePosition, ref ).xyz;
 			dir = fihPosition - selfPosition;
 			dist = length( dir );
