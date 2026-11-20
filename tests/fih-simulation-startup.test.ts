@@ -43,16 +43,36 @@ describe("simulation startup", () => {
     expect(simulation.positionUniforms.activeSlots.value).toBe(mask);
     expect(Array.from(mask.image.data).filter((value) => value === 255)).toHaveLength(INITIAL_FIH);
     simulation.setActiveSlots([1, 35, 999]);
-    expect(simulation.velocityUniforms.activeCount.value).toBe(1000);
+    expect(simulation.velocityUniforms.activeCount.value).toBe(3);
+    expect(simulation.velocityUniforms.contiguousActiveSlots.value).toBe(false);
     expect(Array.from(mask.image.data).flatMap((value, slot) => value === 255 ? [slot] : [])).toEqual([1, 35, 999]);
     simulation.setActiveSlots([35]);
-    expect(simulation.velocityUniforms.activeCount.value).toBe(36);
+    expect(simulation.velocityUniforms.activeCount.value).toBe(1);
     expect(mask.image.data[1]).toBe(0);
     expect(mask.image.data[35]).toBe(255);
     expect(mask.image.data[999]).toBe(0);
     simulation.setActiveSlots([]);
     expect(simulation.velocityUniforms.activeCount.value).toBe(0);
     expect(Array.from(mask.image.data).every((value) => value === 0)).toBe(true);
+    expect(simulation.velocityUniforms.contiguousActiveSlots.value).toBe(true);
+  });
+
+  it("builds a compact neighbor list in slot order and bypasses it for dense schools", () => {
+    const simulation = new GPUSimulation({} as WebGLRenderer);
+    expect(simulation.velocityUniforms.contiguousActiveSlots.value).toBe(true);
+    expect(simulation.positionUniforms.activeCount).toBe(simulation.velocityUniforms.activeCount);
+    expect(simulation.positionUniforms.contiguousActiveSlots).toBe(simulation.velocityUniforms.contiguousActiveSlots);
+    const references = simulation.velocityUniforms.activeReferences.value as DataTexture;
+    simulation.setActiveSlots([999, 1, 35]);
+    const coordinates = references.image.data!;
+    for (const [index, slot] of [1, 35, 999].entries()) {
+      expect(coordinates[index * 2]).toBeCloseTo(((slot % WIDTH) + .5) / WIDTH);
+      expect(coordinates[index * 2 + 1]).toBeCloseTo((Math.floor(slot / WIDTH) + .5) / WIDTH);
+    }
+    simulation.setActiveSlots([2, 0, 1]);
+    expect(simulation.velocityUniforms.activeCount.value).toBe(3);
+    expect(simulation.velocityUniforms.contiguousActiveSlots.value).toBe(true);
+    expect(Array.from(references.image.data!).slice(6).every((value) => value === 0)).toBe(true);
   });
 
   it("retains the first frame on unsupported hardware without retrying initialization every frame", () => {

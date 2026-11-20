@@ -1,10 +1,15 @@
 uniform float time;
 uniform float delta;
 uniform sampler2D activeSlots;
+uniform float activeCount;
+uniform bool contiguousActiveSlots;
 void main()	{
 	vec2 uv = gl_FragCoord.xy / resolution.xy;
 	vec4 tmpPos = texture2D( texturePosition, uv );
-	if (texture2D(activeSlots, uv).r < 0.5) {
+	bool isActive = contiguousActiveSlots
+		? floor(gl_FragCoord.y) * resolution.x + floor(gl_FragCoord.x) < activeCount
+		: texture2D(activeSlots, uv).r >= 0.5;
+	if (!isActive) {
 		gl_FragColor = tmpPos;
 		return;
 	}

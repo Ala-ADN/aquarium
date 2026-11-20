@@ -412,6 +412,7 @@ import.meta.hot?.dispose(() => {
   trashcan?.destroy();
   debugPanel?.destroy();
   renderer.setAnimationLoop(null);
+  gpuSim.dispose();
 });
 
 const resize = () => {
