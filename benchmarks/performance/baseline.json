@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "measuredAt": "2026-11-20T22:27:50.493Z",
+  "protocol": {
+    "version": 3,
+    "viewport": {
+      "width": 1280,
+      "height": 720
+    },
+    "deviceScaleFactor": 1,
+    "seed": 173,
+    "stepSeconds": 0.016666666666666666,
+    "repetitions": 3,
+    "warmupFrames": 60,
+    "sampleFrames": 60,
+    "scenarios": [
+      {
+        "name": "background-30",
+        "groups": 0,
+        "expectedCount": 30
+      },
+      {
+        "name": "full-1000",
+        "groups": 100,
+        "expectedCount": 1000
+      },
+      {
+        "name": "sparse-40",
+        "groups": 1,
+        "prefill": 100,
+        "expectedCount": 40
+      },
+      {
+        "name": "settled-1000",
+        "groups": 100,
+        "ageSteps": 3600,
+        "expectedCount": 1000
+      },
+      {
+        "name": "mobile-1000",
+        "groups": 100,
+        "expectedCount": 1000,
+        "viewport": {
+          "width": 390,
+          "height": 844
+        },
+        "deviceScaleFactor": 2
+      }
+    ]
+  },
+  "environment": {
+    "gpu": "ANGLE (AMD, AMD Radeon Graphics (radeonsi renoir ACO), OpenGL ES 3.2)",
+    "vendor": "Google Inc. (AMD)",
+    "timer": true,
+    "floatBlend": true,
+    "parallelCompile": true,
+    "browser": "159.0.8154.6",
+    "platform": "linux",
+    "angle": "gl"
+  },
+  "scenarios": {
+    "background-30": {
+      "simulationGPU": {
+        "median": 0.03352,
+        "p95": 0.04332
+      },
+      "drawGPU": {
+        "median": 0.42984,
+        "p95": 1.22962
+      },
+      "simulationCPU": {
+        "median": 0.3799999989569187,
+        "p95": 0.5849999990314245
+      },
+      "drawCPU": {
+        "median": 0.13000000081956387,
+        "p95": 0.26999999955296516
+      },
+      "frameCPU": {
+        "median": 0.7149999998509884,
+        "p95": 0.9199999999254942
+      },
+      "frameInterval": {
+        "median": 16.66000000014901,
+        "p95": 16.8899999987334
+      }
+    },
+    "full-1000": {
+      "simulationGPU": {
+        "median": 0.1156,
+        "p95": 0.39336
+      },
+      "drawGPU": {
+        "median": 0.73068,
+        "p95": 1.51344
+      },
+      "simulationCPU": {
+        "median": 0.3250000011175871,
+        "p95": 0.5800000000745058
+      },
+      "drawCPU": {
+        "median": 0.13499999977648258,
+        "p95": 0.27999999932944775
+      },
+      "frameCPU": {
+        "median": 0.5649999994784594,
+        "p95": 1.0150000005960464
+      },
+      "frameInterval": {
+        "median": 16.669999999925494,
+        "p95": 16.875
+      }
+    },
+    "sparse-40": {
+      "simulationGPU": {
+        "median": 0.04128,
+        "p95": 0.05696
+      },
+      "drawGPU": {
+        "median": 0.43596,
+        "p95": 1.23665
+      },
+      "simulationCPU": {
+        "median": 0.26500000059604645,
+        "p95": 0.4550000000745058
+      },
+      "drawCPU": {
+        "median": 0.14499999955296516,
+        "p95": 0.2700000014156103
+      },
+      "frameCPU": {
+        "median": 0.5,
+        "p95": 0.9300000015646219
+      },
+      "frameInterval": {
+        "median": 16.669999999925494,
+        "p95": 16.790000000968575
+      }
+    },
+    "settled-1000": {
+      "simulationGPU": {
+        "median": 0.34924,
+        "p95": 0.879
+      },
+      "drawGPU": {
+        "median": 0.55952,
+        "p95": 1.0312
+      },
+      "simulationCPU": {
+        "median": 0.18500000052154064,
+        "p95": 0.25
+      },
+      "drawCPU": {
+        "median": 0.10999999940395355,
+        "p95": 0.16499999910593033
+      },
+      "frameCPU": {
+        "median": 0.4050000011920929,
+        "p95": 0.5300000011920929
+      },
+      "frameInterval": {
+        "median": 16.665000000968575,
+        "p95": 16.820000000298023
+      }
+    },
+    "mobile-1000": {
+      "simulationGPU": {
+        "median": 0.1144,
+        "p95": 0.15792
+      },
+      "drawGPU": {
+        "median": 0.53676,
+        "p95": 0.98392
+      },
+      "simulationCPU": {
+        "median": 0.28999999910593033,
+        "p95": 0.43999999947845936
+      },
+      "drawCPU": {
+        "median": 0.11500000022351742,
+        "p95": 0.2299999985843897
+      },
+      "frameCPU": {
+        "median": 0.5,
+        "p95": 0.7650000005960464
+      },
+      "frameInterval": {
+        "median": 16.665000000968575,
+        "p95": 16.794999999925494
+      }
+    }
+  },
+  "referenceHash": "ca34f11172470577553c432fbd349819290101b9348e09b8dc98fa64f0b4e254"
+}
