@@ -429,7 +429,7 @@
 }
 
 .vlc-playlist {
-  --vlc-playlist-columns: max-content minmax(0, 1fr) 64px 52px;
+  --vlc-playlist-columns: max-content minmax(0, 1fr) 64px max-content;
   position: absolute;
   z-index: 2;
   inset: 0;
@@ -648,7 +648,7 @@
 
 @media (max-width: 600px) {
   .vlc-playlist {
-    --vlc-playlist-columns: max-content minmax(0, 1fr) 56px 44px;
+    --vlc-playlist-columns: max-content minmax(0, 1fr) 56px max-content;
   }
   .vlc-playlist-columns {
     font-size: 10px;
