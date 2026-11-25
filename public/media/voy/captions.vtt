@@ -1,0 +1,69 @@
+WEBVTT
+
+00:00:00.250 --> 00:00:02.550
+Here we ask the agent which ATLAS techniques
+
+00:00:02.550 --> 00:00:05.050
+have no mitigations that satisfy
+any ISO controls
+
+00:00:05.380 --> 00:00:08.850
+This is a question inquiring about the gaps
+in our knowledge graph representation
+
+00:00:09.260 --> 00:00:13.120
+The agent will first get the schema
+to learn about the knowledge graph,
+
+00:00:13.340 --> 00:00:16.700
+then correctly calls
+an audit compliance gaps tool
+
+00:00:17.100 --> 00:00:19.740
+that traverses the graph for any gaps
+
+00:00:20.420 --> 00:00:25.100
+The agent correctly states that there are
+109 techniques that are not mitigated,
+
+00:00:27.550 --> 00:00:29.780
+and states here the query used
+
+00:00:32.100 --> 00:00:35.550
+If we move on to the graph
+to more intuitively understand what this means,
+
+00:00:36.850 --> 00:00:40.650
+there are ISO requirement nodes
+like “AI risk assessment process”
+
+00:00:40.700 --> 00:00:43.550
+that mandate an ISO control
+
+00:00:43.850 --> 00:00:48.950
+The ISO control is connected to a mitigation
+that satisfies that control
+
+00:00:50.650 --> 00:00:53.650
+The mitigation mitigates some technique
+
+00:00:54.000 --> 00:00:56.150
+We have a complete chain
+
+00:00:57.050 --> 00:01:00.550
+But there are some techniques
+that have no connections
+
+00:01:00.550 --> 00:01:03.650
+to mitigations connected to ISO controls
+
+00:01:03.650 --> 00:01:08.100
+So there are some techniques which have
+not been taken into account as risk scenarios
+
+00:01:08.350 --> 00:01:11.100
+If we run the query stated by the agent here,
+
+00:01:12.500 --> 00:01:17.180
+one of the techniques here is
+“Obtain Capabilities,” which has ID 16

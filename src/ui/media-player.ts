@@ -47,7 +47,7 @@ export function formatMediaTime(seconds: number) {
 }
 
 type Action = "play" | "previous" | "next" | "playlist" | "github" |
-  "mute" | "slower" | "normalSpeed" | "faster" | "info" | "close" | "donate";
+  "captions" | "mute" | "slower" | "normalSpeed" | "faster" | "info" | "close" | "donate";
 type MenuEntry = { label: string; action: Action; shortcut?: string } | null;
 
 const menus: { label: string; entries: MenuEntry[] }[] = [
@@ -62,6 +62,7 @@ const menus: { label: string; entries: MenuEntry[] }[] = [
   ] },
   { label: "View", entries: [
     { label: "Playlist", action: "playlist", shortcut: "Ctrl+L" },
+    { label: "Captions", action: "captions" },
   ] },
   { label: "Help", entries: [
     { label: "Donate to VLC", action: "donate" },
@@ -74,6 +75,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   const queue = [...initialItems];
   let selected = queue.length ? 0 : -1;
   let loadedId: string | null = null;
+  let captionsEnabled = true;
   let destroyed = false;
   let openMenu: number | null = null;
 
@@ -105,6 +107,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
         </span>
         <span class="vlc-tool-group vlc-secondary-tools">
           <button type="button" class="vlc-tool" data-action="playlist" aria-label="Hide playlist" aria-pressed="true"></button>
+          <button type="button" class="vlc-tool" data-action="captions" aria-label="Captions" aria-pressed="false">CC</button>
           <button type="button" class="vlc-tool vlc-github" data-action="github" aria-label="Open project on GitHub" disabled></button>
         </span>
         <div class="vlc-volume">
@@ -228,6 +231,15 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     setIcon(tools.get("play")!, video.paused ? "play" : "pause", video.paused ? "Play" : "Pause");
     tools.get("previous")!.disabled = queue.length < 2 && !(loadedId && video.currentTime > 0);
     tools.get("next")!.disabled = queue.length < 2;
+    const captions = tools.get("captions")!;
+    captions.disabled = !item?.captions;
+    captions.setAttribute("aria-pressed", `${!!item?.captions && captionsEnabled}`);
+    captions.title = item?.captions ? `Captions (${item.captions.label})` : "Captions unavailable";
+    const captionsMenu = menuBar.querySelector<HTMLButtonElement>('[data-menu-action="captions"]');
+    if (captionsMenu) {
+      captionsMenu.disabled = !item?.captions;
+      captionsMenu.setAttribute("aria-checked", `${!!item?.captions && captionsEnabled}`);
+    }
     const github = tools.get("github")!;
     github.disabled = !item?.sourceUrl;
     github.title = item?.sourceUrl ? `Open ${item.title} on GitHub` : "Repository not available";
@@ -294,6 +306,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
   function unload() {
     video.pause();
     loadedId = null;
+    video.replaceChildren();
     video.removeAttribute("src");
     video.load();
     update();
@@ -316,6 +329,15 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
     if (!playlist.hidden) act("playlist");
     if (loadedId !== item.id) {
       loadedId = item.id;
+      if (item.captions) {
+        const track = document.createElement("track");
+        track.kind = "captions";
+        track.srclang = item.captions.lang;
+        track.label = item.captions.label;
+        track.src = mediaUrl(item.captions.src);
+        video.append(track);
+        track.track.mode = captionsEnabled ? "showing" : "disabled";
+      }
       video.src = mediaUrl(item.src);
       video.load();
     }
@@ -411,8 +433,15 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
         playlist.hidden = !playlist.hidden;
         tools.get("playlist")!.setAttribute("aria-pressed", `${!playlist.hidden}`);
         tools.get("playlist")!.setAttribute("aria-label", playlist.hidden ? "Show playlist" : "Hide playlist");
-        menuBar.querySelector('[role="menuitemcheckbox"]')!.setAttribute("aria-checked", `${!playlist.hidden}`);
+        menuBar.querySelector('[data-menu-action="playlist"]')!.setAttribute("aria-checked", `${!playlist.hidden}`);
         break;
+      case "captions": {
+        if (!current()?.captions) break;
+        captionsEnabled = !captionsEnabled;
+        const track = video.querySelector("track");
+        if (track) track.track.mode = captionsEnabled ? "showing" : "disabled";
+        break;
+      }
       case "github": {
         const url = current()?.sourceUrl;
         if (url) window.open(url, "_blank", "noopener,noreferrer");
@@ -529,12 +558,14 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
       if (!entry) { const divider = document.createElement("hr"); divider.setAttribute("role", "separator"); popup.append(divider); return; }
       const button = document.createElement("button");
       button.type = "button"; button.setAttribute("role", "menuitem");
-      if (entry.action === "playlist") {
+      button.dataset.menuAction = entry.action;
+      if (entry.action === "playlist" || entry.action === "captions") {
         button.setAttribute("role", "menuitemcheckbox");
-        button.setAttribute("aria-checked", `${!playlist.hidden}`);
+        button.setAttribute("aria-checked", `${entry.action === "playlist" ? !playlist.hidden : !!current()?.captions && captionsEnabled}`);
+        if (entry.action === "captions") button.disabled = !current()?.captions;
       }
       const label = document.createElement("span"); label.textContent = entry.label;
-      if (entry.action === "playlist") {
+      if (entry.action === "playlist" || entry.action === "captions") {
         const check = document.createElement("span");
         check.className = "vlc-menu-check";
         check.setAttribute("aria-hidden", "true");
@@ -608,7 +639,7 @@ export function mountMediaPlayer(host: HTMLElement, initialItems: readonly Media
       destroyed = true;
       events.abort();
       visibility.disconnect();
-      video.pause(); video.removeAttribute("src"); video.load();
+      unload();
       dialog.remove(); launcher.remove(); frame.destroy();
     },
   };

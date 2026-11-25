@@ -4,6 +4,7 @@ export interface MediaItem {
   /** Public-directory path (relative to the site), or an absolute media URL. */
   src: string;
   poster?: string;
+  captions?: { src: string; lang: string; label: string };
   projectUrl?: string;
   /** GitHub repository opened by the player's GitHub button. */
   sourceUrl?: string;
@@ -23,6 +24,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     title: "Credleaf",
     src: "media/credleaf/demo.mp4",
     poster: "media/credleaf/poster.webp",
+    captions: { src: "media/credleaf/captions.vtt", lang: "mul", label: "English + العربية" },
     sourceUrl: "https://github.com/Ala-ADN/Credleaf_",
     description:
       "fact-checking and OSINT tool for exploring health misinformation through network graphs, timelines, and trust scores",
@@ -33,6 +35,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     title: "Voy",
     src: "media/voy/demo.mp4",
     poster: "media/voy/poster.webp",
+    captions: { src: "media/voy/captions.vtt", lang: "en", label: "English" },
     sourceUrl: "https://github.com/Ala-ADN/voy-demo",
     description:
       "graph-powered AI security analyst connecting MITRE ATLAS, OWASP LLM risks, and ISO 42001 controls to uncover compliance gaps",
@@ -43,6 +46,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     title: "ReLib",
     src: "media/relib/demo.mp4",
     poster: "media/relib/poster.webp",
+    captions: { src: "media/relib/captions.vtt", lang: "mul", label: "English + العربية" },
     sourceUrl: "https://github.com/saidiadem/relib",
     description:
       "interactive knowledge graph exploring colonial history through Wikipedia articles, source attribution, and contrasting narratives",
@@ -53,6 +57,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     title: "Gommage",
     src: "media/gommage/demo.mp4",
     poster: "media/gommage/poster.webp",
+    captions: { src: "media/gommage/captions.vtt", lang: "mul", label: "English + العربية" },
     sourceUrl: "https://github.com/Ala-ADN/gommage",
     description:
       "Jira-native debugger for AI agents: record execution traces, inspect tool calls, and replay edited runs without repeating live side effects",
@@ -63,6 +68,7 @@ export const mediaLibrary: readonly MediaItem[] = [
     title: "Klippy",
     src: "media/klippy/demo.mp4",
     poster: "media/klippy/poster.webp",
+    captions: { src: "media/klippy/captions.vtt", lang: "en", label: "English visual captions" },
     sourceUrl: "https://github.com/Rayen-Hamza/Klippy",
     description:
       "local-first desktop assistant that searches documents, images, and audio using retrieval and knowledge graph reasoning with small language models",

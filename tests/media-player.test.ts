@@ -126,6 +126,40 @@ describe("desktop media player", () => {
     expect(video.src).toContain("media/second/demo.mp4");
   });
 
+  it("loads the selected captions on Play and keeps the CC choice across videos", () => {
+    const captions = { src: "media/first/captions.vtt", lang: "mul", label: "English + العربية" };
+    player = mountMediaPlayer(host, [
+      { ...items[0], captions },
+      { ...items[1], captions: { src: "media/second/captions.vtt", lang: "en", label: "English" } },
+      { id: "third", title: "Third demo", src: "media/third/demo.mp4" },
+    ]);
+    const video = host.querySelector("video")!;
+    const cc = button("captions");
+    const captionsMenu = host.querySelector<HTMLButtonElement>('[data-menu-action="captions"]')!;
+    expect(captionsMenu.getAttribute("aria-checked")).toBe("true");
+    expect(video.querySelector("track")).toBeNull();
+    button("play").click();
+    const track = video.querySelector("track")!;
+    expect(track.src).toContain(captions.src);
+    expect([track.kind, track.srclang, track.label]).toEqual(["captions", captions.lang, captions.label]);
+    expect(cc.getAttribute("aria-pressed")).toBe("true");
+    captionsMenu.click();
+    expect(cc.getAttribute("aria-pressed")).toBe("false");
+    cc.click();
+    expect(captionsMenu.getAttribute("aria-checked")).toBe("true");
+    cc.click();
+    expect(captionsMenu.getAttribute("aria-checked")).toBe("false");
+    host.querySelectorAll<HTMLButtonElement>(".vlc-playlist-item")[1].click();
+    expect(video.querySelector("track")).toBeNull();
+    button("play").click();
+    expect(video.querySelector("track")!.src).toContain("media/second/captions.vtt");
+    expect(cc.getAttribute("aria-pressed")).toBe("false");
+    button("next").click();
+    expect(video.querySelector("track")).toBeNull();
+    expect(cc.disabled).toBe(true);
+    expect(captionsMenu.disabled).toBe(true);
+  });
+
   it.each([true, false])("autoplays Next and Previous when paused is %s", (paused) => {
     player = mountMediaPlayer(host, items);
     const video = host.querySelector("video")!;

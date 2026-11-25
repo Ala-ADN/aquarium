@@ -106,6 +106,16 @@ describe("staged performance inputs", () => {
     expect(affectsPerformance(["README.md", "docs/design.md", "tests/example.test.ts"])).toBe(false);
     for (const file of ["src/main.ts", "src/water/fragment.glsl", "public/fih.svg", "pnpm-lock.yaml", ".githooks/pre-commit", "benchmarks/performance/config.mjs"]) expect(affectsPerformance([file])).toBe(true);
   });
+  it("skips playback-only commits but still measures mixed changes and shared rendering inputs", () => {
+    const subtitles = ["README.md", "public/media/credleaf/captions.vtt", "src/media/library.ts",
+      "src/ui/media-player.ts", "src/ui/media-player.css", "src/asset/vlc/play.png", "tests/media-player.test.ts"];
+    expect(affectsPerformance(subtitles)).toBe(false);
+    for (const file of ["src/main.ts", "src/simulation/GPUSimulation.ts", "src/fih/shader/velocity.glsl",
+      "src/style.css", "src/ui/window.css", "src/ui/window.ts", "src/ui/fih-editor.ts", "vite.config.ts",
+      "package.json", "pnpm-lock.yaml", "benchmarks/performance/snapshot.mjs", "src/unknown.ts"]) {
+      expect(affectsPerformance([...subtitles, file]), file).toBe(true);
+    }
+  });
 });
 
 describe("temporary benchmark instrumentation", () => {

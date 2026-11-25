@@ -24,7 +24,10 @@ repository in a new tab; it is disabled when no repository is supplied. The
 playlist uses one line per project with title, description, duration, and GitHub
 columns sized to fit the window. Long descriptions use an ellipsis; hover to read them in full.
 Voy, Credleaf, ReLib, Gommage, and Klippy are included with browser-ready H.264/AAC MP4 demos
-and WebP posters. Original uploads are preserved locally in the ignored
+and WebP posters. Captions start enabled and the **CC** button toggles them.
+To revise a draft, edit the text or timestamps in `public/media/<project>/captions.vtt`
+and reload the player. Each cue has a start and end time followed by its text.
+Original uploads are preserved locally in the ignored
 `media-originals/` folder and excluded from the deployed site. The
 desktop cone reopens a minimized or closed player. The title bar supports dragging,
 double-click to maximize, and the original window tilt. The toolbar's buttons
@@ -39,6 +42,7 @@ To publish project demos, place compressed exports and posters in
 ```ts
 { id: "project-name", title: "Project name", src: "media/project-name/demo.mp4",
   poster: "media/project-name/poster.webp", projectUrl: "https://example.com",
+  captions: { src: "media/project-name/captions.vtt", lang: "en", label: "English" },
   sourceUrl: "https://github.com/your-name/project-name",
   description: "A short description of what the project does.", duration: 79.168 }
 ```

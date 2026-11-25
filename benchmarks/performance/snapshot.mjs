@@ -10,8 +10,14 @@ export async function changedStagedFiles(root) {
 }
 
 export function affectsPerformance(files) {
+  // These scenarios never play a video. Benchmarking playback-only changes
+  // cannot assess their cost and adds a full GPU run to unrelated commits.
+  // Keep this list narrow: shared UI/styles and unknown files still trigger it.
+  const playbackOnly = file => file === "src/ui/media-player.ts" ||
+    file === "src/ui/media-player.css" || file.startsWith("src/media/") ||
+    file.startsWith("public/media/") || file.startsWith("src/asset/vlc/");
   return files.some(file => !file.startsWith("tests/") && !file.startsWith("docs/") &&
-    !file.startsWith(".github/") && !file.endsWith(".md"));
+    !file.startsWith(".github/") && !file.endsWith(".md") && !playbackOnly(file));
 }
 
 export async function stageSnapshot(root, destination) {

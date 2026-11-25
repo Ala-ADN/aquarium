@@ -11,7 +11,7 @@ try {
   const root = stdout.trim();
   const files = await changedStagedFiles(root);
   if (!affectsPerformance(files)) {
-    console.log("Performance gate: no staged runtime changes.");
+    console.log("Performance gate: skipped (no staged aquarium GPU workload changes; video playback is not benchmarked).");
   } else {
     temporary = await mkdtemp(join(tmpdir(), "aquarium-staged-perf-"));
     const source = join(temporary, "source");
